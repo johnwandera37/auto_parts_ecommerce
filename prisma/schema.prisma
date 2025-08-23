@@ -1,0 +1,207 @@
+// I reached the folllowing part, enforce at the schema level that a user can have only one ACTIVE cart at a time, or leave that rule to your business logic
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum CartStatus {
+  ACTIVE
+  ABANDONED
+  CHECKED_OUT
+}
+
+// =================================
+// USER / ACCOUNT RELATED MODELS
+// =================================
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  password      String
+  name          String?
+  role          Role        @default(USER)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  orders        Order[]
+  wishlist      Wishlist[]
+  vehicles      Vehicle[]
+  cart          Cart?
+  verification  Verification?
+  settings      UserSettings?
+
+  // Extendable Profiles
+  adminProfile  AdminProfile?
+}
+
+model UserSettings {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  theme     String?
+  language  String?
+  currency  String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  token      String   @unique
+  expiresAt  DateTime
+  verified   Boolean  @default(false)
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Admins get extra profile info
+model AdminProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level  Int    @default(1) // 1=basic admin, 2=manager, 3=super admin
+}
+
+// =================================
+// E-COMMERCE CORE MODELS
+// =================================
+model Product {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  stock       Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  brandId     String?
+  brand       Brand?       @relation(fields: [brandId], references: [id])
+
+  orderItems  OrderItem[]
+  cartItems   CartItem[]
+  wishlists   Wishlist[]
+  compatibility Compatibility[]
+}
+
+model Brand {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  products  Product[]
+}
+
+model Compatibility {
+  id          String   @id @default(cuid())
+  productId   String
+  vehicleId   String
+
+  product     Product  @relation(fields: [productId], references: [id])
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+}
+
+model Vehicle {
+  id          String   @id @default(cuid())
+  make        String
+  model       String
+  year        Int
+
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+
+  compatibility Compatibility[]
+}
+
+// Orders
+model Order {
+  id         String      @id @default(cuid())
+  userId     String
+  status     String      @default("PENDING")
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id])
+  cart       Cart?       @relation("CartToOrder", fields: [id], references: [id]) // established the same cart link here
+  items      OrderItem[]
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  productId  String
+  quantity   Int      @default(1)
+  price      Float
+
+  order      Order    @relation(fields: [orderId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id])
+}
+
+// Cart (one per user)
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  status    CartStatus @default(ACTIVE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  order     Order?     @relation("CartToOrder")  // linking cart to order with a custom relation name
+}
+
+// Items inside cart
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  productId String
+  quantity  Int      @default(1)
+
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+// Wishlist
+model Wishlist {
+  id         String   @id @default(cuid())
+  userId     String
+  productId  String
+
+  user       User     @relation(fields: [userId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id])
+}
+
+// =================================
+// OTHER MODELS
+// =================================
+model Deal {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  discount    Float
+  startDate   DateTime
+  endDate     DateTime
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+}
