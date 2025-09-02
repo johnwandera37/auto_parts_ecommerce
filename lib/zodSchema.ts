@@ -92,6 +92,7 @@ export const loginSchema = z
   .object({
     email: z.email().openapi({ example: "johndoe@gmail.com" }),
     password: z.string().openapi({ example: "Doe@12345" }),
+    rememberMe: z.boolean().optional().default(false).openapi({ example: true }),
   })
   .openapi("Login");
 

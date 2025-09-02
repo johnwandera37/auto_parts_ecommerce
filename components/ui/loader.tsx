@@ -1,6 +1,5 @@
-// Checkout Portal-Based Loader, might be usefull, but for the global auth loader covers it
-import { cn } from "@/lib/utils" 
-import { Loader as Spinner } from "lucide-react"
+import { Loader2 as Spinner } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 type LoaderProps = {
   variant?: "fullscreen" | "inline" | "button"

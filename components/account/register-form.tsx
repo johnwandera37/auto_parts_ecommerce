@@ -4,8 +4,7 @@ import type React from "react";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, User, Loader2 } from "lucide-react";
-
+import { Mail, Lock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -14,10 +13,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { fetcher } from "@/lib/fetcher";
 import { endpoints } from "@/config/constants";
 import { signupSchema } from "@/lib/zodSchema";
-import { errLog, log } from "@/utils/logger";
-import { getErrorMessage } from "@/utils/errMsg";
-import { treeifyError, ZodError } from "zod/v4";
-import { flattenTreeErrors } from "@/utils/flattenTreeErrors";
+import { handleFormError } from "@/utils/handleFormErrors";
+import { useAlert } from "@/hooks/useAlert";
+import { toast } from "@/hooks/use-toast";
+import Loader from "../ui/loader";
+import { usePasswordField } from "@/hooks/usePasswordField";
 
 export function RegisterForm() {
   const [formData, setFormData] = useState({
@@ -29,10 +29,9 @@ export function RegisterForm() {
     acceptedTerms: false,
     marketingConsent: false,
   });
-
+  const { showPassword, PasswordToggle } = usePasswordField();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { setError, setSuccess, AlertUI } = useAlert();
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,34 +81,16 @@ export function RegisterForm() {
       });
 
       setSuccess(res.message || "Account created successfully!");
+      toast({
+        title: res.message || "Account created successfully!",
+        description: "Redirecting to login",
+      });
 
       setTimeout(() => {
         router.push("/login");
       }, 2000);
     } catch (err: any) {
-      errLog("RAW ERROR CAUGHT:", err);
-      if (err instanceof ZodError) {
-        const tree = treeifyError(err); // 👇 now treeify on the frontend too
-        const errors = flattenTreeErrors(tree);
-        errLog("Frontend Zod errors: ", errors);
-        // For more than one error from zod (line break or list)
-        setError(Object.values(errors).join("\n"));
-      } else if (err?.error && typeof err.error === "object") {
-        // backend zod errors (already treeified) very unlikely to happen unless front end zod not working
-        const errors = flattenTreeErrors(err.error);
-        errLog("Backend zod errors: ", errors);
-        setError(Object.values(errors).join("\n"));
-      } else if (err?.error && typeof err.error === "string") {
-        // backend single error message
-        errLog("Backend plain error: ", err.error);
-        setError(err.error);
-      } else {
-        if (err instanceof Error) {
-          // generic JS/Fetch error, logout in prod through logger etc for better handling
-          errLog("Generic error: ", err.message);
-        }
-        return setError("An unexpected error occurred");
-      }
+      handleFormError(err, setError, toast);
     } finally {
       setLoading(false);
     }
@@ -119,20 +100,7 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <Alert variant="destructive" className="bg-red-50 text-red-600">
-          <AlertDescription className="whitespace-pre-line">
-            {error}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {success && (
-        <Alert variant="default" className="bg-green-50 text-green-600">
-          <AlertDescription>{success}</AlertDescription>
-        </Alert>
-      )}
-
+      <AlertUI /> {/* ✅ directly rendered from hook */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
@@ -166,7 +134,6 @@ export function RegisterForm() {
           </div>
         </div>
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <div className="relative">
@@ -183,7 +150,6 @@ export function RegisterForm() {
           />
         </div>
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
         <div className="relative">
@@ -191,13 +157,14 @@ export function RegisterForm() {
           <Input
             id="password"
             name="password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             placeholder="password"
             className="pl-10"
             value={formData.password}
             onChange={handleChange}
             required
           />
+          <PasswordToggle />
         </div>
         <div className="flex gap-1">
           {[...Array(4)].map((_, i) => (
@@ -221,7 +188,6 @@ export function RegisterForm() {
           and special characters
         </p>
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="confirmPassword">Confirm Password</Label>
         <div className="relative">
@@ -229,16 +195,16 @@ export function RegisterForm() {
           <Input
             id="confirmPassword"
             name="confirmPassword"
-            type="password"
+            type={showPassword ? "text" : "password"}
             placeholder="confirm password"
             className="pl-10"
             value={formData.confirmPassword}
             onChange={handleChange}
             required
           />
+          <PasswordToggle />
         </div>
       </div>
-
       <div className="space-y-3">
         <div className="flex items-start space-x-2">
           <Checkbox
@@ -276,7 +242,6 @@ export function RegisterForm() {
           </Label>
         </div>
       </div>
-
       <Button
         type="submit"
         className="w-full bg-red-600 hover:bg-red-700"
@@ -284,7 +249,7 @@ export function RegisterForm() {
       >
         {loading ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account
+            <Loader size="sm" variant="button" /> Creating Account
           </>
         ) : (
           "Create Account"

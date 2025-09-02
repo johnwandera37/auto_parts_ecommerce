@@ -6,7 +6,7 @@ import { serialize } from "cookie"; //serialize data into a cookie header
 import { getRedisClient } from "@/lib/redis";
 import { randomUUID } from "crypto"; //for multiple sessions
 import { errLog } from "@/utils/logger";
-import { getErrorMessage } from "@/utils/errMsg";
+import { getErrorMessage } from "@/utils/errMsg"; 
 import {
   ACCESS_TOKEN_MAX_AGE,
   REFRESH_TOKEN_MAX_AGE,
@@ -56,10 +56,10 @@ export async function POST(req: Request) {
       sessionId, // 👈 included in JWT payload for multiple session
     });
 
-    // Set refresh token and user id in redis
+    // Set refresh token and user id in redis, ensure this is checked later, how keys are stored for cart, orders etc, whether to use differnt db
     try {
       const redis = await getRedisClient();
-      await redis.set(`session:${sessionId}`, refreshToken, {
+      await redis.set( `auto_parts_ecommerce:session:${sessionId}`, refreshToken, {
         EX: REFRESH_TOKEN_MAX_AGE,
       }); // 7 days
     } catch (redisError) {
@@ -91,7 +91,8 @@ export async function POST(req: Request) {
         message: "Login successful",
         user: {
           id: user.id,
-          name: user.name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email,
           role: user.role,
         },
