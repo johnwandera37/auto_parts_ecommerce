@@ -30,6 +30,8 @@ export function RegisterForm() {
     marketingConsent: false,
   });
   const { showPassword, PasswordToggle } = usePasswordField();
+  const { showPassword: showConfirmPassword, PasswordToggle: ConfirmPasswordToggle } =
+    usePasswordField();
   const [loading, setLoading] = useState(false);
   const { setError, setSuccess, AlertUI } = useAlert();
   const router = useRouter();
@@ -195,14 +197,14 @@ export function RegisterForm() {
           <Input
             id="confirmPassword"
             name="confirmPassword"
-            type={showPassword ? "text" : "password"}
+            type={showConfirmPassword ? "text" : "password"}
             placeholder="confirm password"
             className="pl-10"
             value={formData.confirmPassword}
             onChange={handleChange}
             required
           />
-          <PasswordToggle />
+          <ConfirmPasswordToggle />
         </div>
       </div>
       <div className="space-y-3">

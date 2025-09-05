@@ -39,15 +39,15 @@ export async function PATCH(req: Request) {
     }
 
     // Now we have received data from the body
-    const { name, email, password, currentPassword } = parsed.data;
+    const { firstName, lastName, email, currentPassword, newPassword  } = parsed.data;
 
     // 2. Get default admin(This will proceed with the current admin trying to do this operation)
-    const dbAdmin = await prisma.user.findUnique({
+    const superAdmin = await prisma.user.findUnique({
       where: { id: user.id },
     });
 
     //Check admin with default credential, if not found, either admin was not seeded or was updated
-    const defaultAdminExists = dbAdmin?.email === "admin@example.com";
+    const defaultAdminExists = superAdmin?.email === "admin@example.com";
     if (!defaultAdminExists) {
       return NextResponse.json(
         {
@@ -59,7 +59,7 @@ export async function PATCH(req: Request) {
     }
 
     // 3. Ensure admin proceeds with their unique email, not the default one  // 403 - Security Policy Violations
-    if (email === dbAdmin.email && dbAdmin.email === "admin@example.com") {
+    if (email === superAdmin.email && superAdmin.email === "admin@example.com") {
       return NextResponse.json(
         { error: "Must change default admin email" },
         { status: 403 }
@@ -69,7 +69,7 @@ export async function PATCH(req: Request) {
     // 4. Verify current password against seeded credentials
     const passwordValid = await comparePasswords(
       currentPassword,
-      dbAdmin.password
+      superAdmin.password
     );
 
     // 401 - Credential Verification
@@ -84,11 +84,11 @@ export async function PATCH(req: Request) {
     }
 
     // 5. Email uniqueness check (excluding self)
-    if (email !== dbAdmin.email) {
+    if (email !== superAdmin.email) {
       const emailExists = await prisma.user.findFirst({
         where: {
           email,
-          id: { not: dbAdmin.id },
+          id: { not: superAdmin.id },
         },
       });
 
@@ -101,13 +101,15 @@ export async function PATCH(req: Request) {
     }
 
     // 6. Update admin credentials
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await hashPassword(newPassword);
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        name,
+        firstName,
+        lastName,
         email,
         password: hashedPassword,
+        hasUpdatedCredentials: true, // This needs to be updated
       },
     });
 
@@ -119,9 +121,10 @@ export async function PATCH(req: Request) {
       const payload = verifyRefreshToken(result.refreshToken) as {
         sessionId: string;
       };
+      
       //delete the refresh token that is in redis
       const redis = await getRedisClient();
-      await redis.del(`session:${payload.sessionId}`);
+      await redis.del(`auto_parts_ecommerce:session:${payload.sessionId}`);
 
       // 8. Return the response
       return apiResponse({

@@ -1,32 +1,35 @@
-import { verifyAccessToken } from "@/lib/jwt";
-import { getErrorMessage } from "@/utils/errMsg";
-import { errLog } from "@/utils/logger";
+// lib/authorize.ts
+import { stringConstants } from "@/config/constants";
+import { verifyRequestAuth } from "@/lib/auth-core";
+import { getUserById } from "@/utils/getUserById";
 import { NextResponse } from "next/server";
-
-// Verify the jwt and authorize roles
 
 export function authorize(roles: string[] = []) {
   return async function middleware(req: Request) {
-    const authHeader = req.headers.get("Authorization");
+    const result = await verifyRequestAuth(req, roles);
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!result.valid) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.error === "Forbidden" ? 403 : 401 }
+      );
     }
 
-    const token = authHeader.split(" ")[1];
-
-    try {
-      const decoded = verifyAccessToken(token) as { id: string; role: string };
-
-      if (roles.length && !roles.includes(decoded.role)) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-
-      // return the user data 
-      return { authorized: true, user: decoded };
-    } catch (err) {
-        errLog("Auth error", getErrorMessage(err));
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    // ✅ Add null check for TypeScript safety
+    if (!result.user) {
+      return NextResponse.json({ error: "User not found" }, { status: 401 });
     }
+
+    // 🚨 Block default admin
+    if (result.user.email === stringConstants.defaultEmail) {
+      return NextResponse.json(
+        {
+          error: "Default admin must update profile before using this feature",
+        },
+        { status: 403 }
+      );
+    }
+
+    return { authorized: true, user: result.user };
   };
-} 
+}

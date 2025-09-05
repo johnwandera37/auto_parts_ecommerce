@@ -7,6 +7,7 @@ import { getErrorMessage } from "@/utils/errMsg";
 import { ACCESS_TOKEN_MAX_AGE } from "@/config/constants";
 import { getRefreshTokenFromRequest } from "@/lib/cookieUtils";
 import { handleRedisError } from "@/lib/redisErrorMapperHandler";
+import { email } from "zod/v4";
 
 export async function POST(req: Request) {
   // Get cookies from header string
@@ -18,13 +19,14 @@ export async function POST(req: Request) {
     const payload = verifyRefreshToken(result.refreshToken) as {
       id: string;
       role: string;
+      email: string;
       sessionId: string;
     };
 
     try {
       // Attempt to get Redis client
       const redis = await getRedisClient();
-      const redisKey = `session:${payload.sessionId}`;
+      const redisKey = `auto_parts_ecommerce:session:${payload.sessionId}`;
       const storedRefreshToken = await redis.get(redisKey);
 
       if (!storedRefreshToken || storedRefreshToken !== result.refreshToken) {
@@ -33,7 +35,7 @@ export async function POST(req: Request) {
       }
 
       // Create new access token
-      const newAccessToken = signToken({ id: payload.id, role: payload.role });
+      const newAccessToken = signToken({ id: payload.id, role: payload.role, email: payload.email });
 
       const accessCookie = serialize("access_token", newAccessToken, {
         httpOnly: true,
@@ -52,13 +54,14 @@ export async function POST(req: Request) {
       });
     } catch (redisError: any) {
       return handleRedisError(redisError, "refresh handler", {
-        status: 401,
+        status: 401,// specific default error on redis error mapper provided
         message: "Session validation failed",
       });
     }
   } catch (error: any) {
     // Handle JWT verification errors
     const errorMessage = getErrorMessage(error);
+    errLog("Refresh error from route: ", error);
 
     if (errorMessage.includes("jwt expired")) {
       log("❌ Expired refresh token");

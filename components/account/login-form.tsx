@@ -2,9 +2,9 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Lock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { fetcher } from "@/lib/fetcher";
-import { endpoints } from "@/config/constants";
-import { errLog } from "@/utils/logger";
+import { endpoints, pages } from "@/config/constants";
+import { errLog, log } from "@/utils/logger";
 import { handleFormError } from "@/utils/handleFormErrors";
 import { loginSchema } from "@/lib/zodSchema";
 
@@ -21,6 +21,8 @@ import { useAlert } from "@/hooks/useAlert";
 import { toast } from "@/hooks/use-toast";
 import Loader from "../ui/loader";
 import { usePasswordField } from "@/hooks/usePasswordField";
+import { useAuth, useAuthOptional } from "@/context/AuthContext";
+import { setAccessToken } from "@/utils/tokenStore";
 
 export function LoginForm() {
   const [formData, setFormData] = useState({
@@ -32,6 +34,20 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const { setError, setSuccess, AlertUI } = useAlert();
   const router = useRouter();
+  const { setUser } = useAuth();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // Check for session expired parameter
+    if (searchParams.get("session") === "expired") {
+      toast({
+        title: "Session Expired",
+        description:
+          "Your session has expired. Please log in again to continue.",
+        variant: "destructive",
+      });
+    }
+  }, [searchParams]);
 
   const handleChange = (
     field: keyof typeof formData,
@@ -43,6 +59,7 @@ export function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     setIsLoading(true);
 
     try {
@@ -52,29 +69,65 @@ export function LoginForm() {
       // 1. Call login endpoint
       const loginResponse = await fetcher<{
         message: string;
-        user: {
-          id: string;
-          firstName: string;
-          lastName: string;
-          email: string;
-          role: string;
-        };
+        user: User;
+        requiresProfileUpdate?: boolean;
       }>(endpoints.login, {
         method: "POST",
         body: parsed,
       });
 
-      // 2. If success, redirect to dashboard
-      if (loginResponse?.user) {
-        setSuccess(loginResponse.message || "Login successful!");
-        toast({
-          title: loginResponse.message || "Login successful",
-          description: "Welcome to Deutche Point",
-        });
+      // 2. 🔥 Immediately fetch access token + expiry from backend to ensure axios is in sync with current token
+      const tokenRes = await fetcher(endpoints.accessToken);
+      const tokenData = await tokenRes;
+      if (tokenData?.token && tokenData?.expiresIn) {
+        setAccessToken(tokenData.token, tokenData.expiresIn);
+        // Force a small delay to ensure cookie is set
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
 
-        setTimeout(() => {
-          router.push("/account/dashboard");
-        }, 2000);
+      // 3. 🔥 Store user and logged in state in context
+      setUser(loginResponse.user);
+
+      // 2. If success, redirect to dashboard / update default profile
+      if (loginResponse?.user) {
+        // Check if login is with default credentials
+        if (loginResponse.requiresProfileUpdate) {
+          // Special case: force update
+          setError(
+            "You are using default credentials. Please update your profile."
+          );
+          toast({
+            title: "Update Required",
+            description: "Please change your default credentials to continue.",
+            variant: "destructive", // highlight urgency
+          });
+
+          // Redirect to admin profile update page
+          setTimeout(() => {
+            router.push(pages.onbording);
+          }, 2000);
+        } else {
+          // Normal login flow
+          setSuccess(loginResponse.message || "Login successful!");
+          toast({
+            title: loginResponse.message || "Login successful",
+            description: "Welcome to Deutche Point",
+          });
+
+          // setTimeout(() => {
+          switch (loginResponse.user.role) {
+            case "ADMIN":
+              router.push(pages.adminDashboard);
+              break;
+            case "USER":
+              router.push(pages.userDashboard);
+              break;
+            default:
+              router.push(pages.home);
+              break;
+          }
+          // }, 2000);
+        }
       }
     } catch (err: any) {
       handleFormError(err, setError, toast);

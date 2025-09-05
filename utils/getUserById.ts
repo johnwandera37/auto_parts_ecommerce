@@ -5,7 +5,8 @@ export async function getUserById(id: string) {
     where: { id },
     select: {
       id: true,
-      name: true,
+      firstName: true,
+      lastName: true,
       email: true,
       role: true,
     },

@@ -39,6 +39,7 @@ model User {
   firstName      String
   lastName      String
   role      Role     @default(USER)
+  hasUpdatedCredentials Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   // ✅ Consent / Legal

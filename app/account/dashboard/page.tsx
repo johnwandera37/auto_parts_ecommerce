@@ -1,4 +1,5 @@
-import type { Metadata } from "next"
+"use client";
+
 import Link from "next/link"
 import { Car, Heart, ShoppingBag, Clock, ChevronRight } from "lucide-react"
 
@@ -7,13 +8,38 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AccountNav } from "@/components/account/account-nav"
-
-export const metadata: Metadata = {
-  title: "Account Dashboard | Deutsche Point",
-  description: "Manage your Deutsche Point account, orders, saved vehicles, and more.",
-}
+import { useAuth } from "@/context/AuthContext"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation";
+import { log } from "@/utils/logger";
+import { pages } from "@/config/constants";
 
 export default function DashboardPage() {
+  
+  // Access logged in user from context
+    const { user, isLoading, userError } = useAuth(); // Get user from context
+    // const router = useRouter();
+  
+    // useEffect(() => {
+    //   // Check if user is logged in and is USER
+    //   if (!isLoading) {
+    //     if (!user && userError === "unauthorized") {
+    //       // If user is null (not authenticated), redirect to login page
+    //       router.push(pages.login);
+    //       return;
+    //     }
+  
+    //     // if (user && user.role !== "USER") {
+    //     //   router.push(pages.home); // return to home public page if not a USER
+    //     //   return;
+    //     // }
+    //   }
+    // }, [isLoading, user, router]);
+  
+    // if (!user || isLoading) {
+    //   return null; // Loading state or redirect will happen
+    // }
+  
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -25,13 +51,13 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[240px_1fr]">
-            <AccountNav />
+            <AccountNav user={user} />
 
             <div className="space-y-8">
               <div className="rounded-lg border bg-card p-6 shadow-sm">
                 <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                   <div>
-                    <h2 className="text-xl font-bold">Welcome back, John</h2>
+                    <h2 className="text-xl font-bold">Welcome back, {user.firstName}</h2>
                     <p className="text-sm text-muted-foreground">
                       Account created on <time dateTime="2023-01-15">January 15, 2023</time>
                     </p>

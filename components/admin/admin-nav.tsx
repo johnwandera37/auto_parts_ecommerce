@@ -1,13 +1,38 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { LayoutDashboard, Package, ShoppingCart, Users, BarChart3, Settings, Menu, X, LogOut, Bell } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Users,
+  BarChart3,
+  Settings,
+  Menu,
+  X,
+  LogOut,
+  Bell,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import router from "next/router";
+import { errLog } from "@/utils/logger";
+import { getErrorMessage } from "@/utils/errMsg";
+import Loader from "../ui/loader";
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -16,17 +41,50 @@ const navigation = [
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Settings", href: "/admin/settings", icon: Settings },
-]
+];
 
-export function AdminNav() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const pathname = usePathname()
+export type NavProps = {
+  user: User;
+};
+
+export function AdminNav({ user }: NavProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = usePathname();
+  const { logout } = useAuth(); // Get lgout from context
+  const { toast } = useToast();
+  const [isLoggingOut, setIsLoggingOut] = useState(false); // local state for the logout
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout(); // clear user, token, etc.
+      router.push("/account/login"); // redirect to login
+    } catch (error) {
+      errLog("Logout failed:", getErrorMessage(error));
+      toast({
+        title: "Logout failed",
+        description: "An error occured during logout",
+      });
+
+      setIsLoggingOut(false); // re-enable UI on failure
+    }
+  };
 
   return (
     <>
+      {isLoggingOut && <Loader variant="fullscreen" size="lg" />}
+      
       {/* Mobile sidebar */}
-      <div className={cn("fixed inset-0 z-50 lg:hidden", sidebarOpen ? "block" : "hidden")}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+      <div
+        className={cn(
+          "fixed inset-0 z-50 lg:hidden",
+          sidebarOpen ? "block" : "hidden"
+        )}
+      >
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-75"
+          onClick={() => setSidebarOpen(false)}
+        />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-dp-black">
           <div className="flex h-16 items-center justify-between px-4 border-b border-gray-800">
             <div className="flex items-center space-x-2">
@@ -58,14 +116,17 @@ export function AdminNav() {
                   "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-300",
                   pathname === item.href
                     ? "bg-dp-gold text-dp-black"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-dp-gold",
+                    : "text-gray-300 hover:bg-gray-800 hover:text-dp-gold"
                 )}
                 onClick={() => setSidebarOpen(false)}
               >
                 <item.icon className="mr-3 h-5 w-5" />
                 {item.name}
                 {item.badge && (
-                  <Badge variant="secondary" className="ml-auto bg-dp-red text-white">
+                  <Badge
+                    variant="secondary"
+                    className="ml-auto bg-dp-red text-white"
+                  >
                     {item.badge}
                   </Badge>
                 )}
@@ -100,13 +161,16 @@ export function AdminNav() {
                   "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-300",
                   pathname === item.href
                     ? "bg-dp-gold text-dp-black"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-dp-gold",
+                    : "text-gray-300 hover:bg-gray-800 hover:text-dp-gold"
                 )}
               >
                 <item.icon className="mr-3 h-5 w-5" />
                 {item.name}
                 {item.badge && (
-                  <Badge variant="secondary" className="ml-auto bg-dp-red text-white">
+                  <Badge
+                    variant="secondary"
+                    className="ml-auto bg-dp-red text-white"
+                  >
                     {item.badge}
                   </Badge>
                 )}
@@ -129,21 +193,58 @@ export function AdminNav() {
           </Button>
 
           <div className="flex items-center space-x-4 ml-auto">
-            <Button variant="ghost" size="sm" className="text-white hover:text-dp-gold transition-colors">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:text-dp-gold transition-colors"
+            >
               <Bell className="h-5 w-5" />
             </Button>
-            <div className="flex items-center space-x-2">
-              <div className="text-right">
-                <p className="text-sm font-medium text-white">Admin User</p>
-                <p className="text-xs text-gray-400">admin@deutschepoint.de</p>
-              </div>
-              <Button variant="ghost" size="sm" className="text-white hover:text-dp-gold transition-colors">
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="flex items-center space-x-2 text-white hover:text-dp-gold transition-colors"
+                >
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-white">
+                      {`${user?.firstName} ${user?.lastName}` || "Admin User"}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {user?.email ?? "admin@deutschepoint.de"}
+                    </p>
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/profile" className="flex items-center">
+                    <Users className="mr-2 h-4 w-4" />
+                    View Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/settings" className="flex items-center">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-red-600"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
     </>
-  )
+  );
 }

@@ -15,21 +15,34 @@ const ACCESS_TOKEN_MAX_AGE = Number(process.env.ACCESS_TOKEN_MAX_AGE) || 60 * 15
 const REFRESH_TOKEN_MAX_AGE = Number(process.env.REFRESH_TOKEN_MAX_AGE) || 60 * 60 * 24 * 7; //7 days
 
 // ENDPOINTS
-const baseURL = process.env.BASE_URL || "http://localhost:3000/";
+const baseURL = process.env.BASE_URL || "http://localhost:3000";
 
 export const endpoints = {
   // Auth
-  login: "api/auth/login",
-  register: "api/auth/signup",
-  refresh: "api/auth/refresh",
-  logout: "api/auth/logout",
-  accessToken: "api/auth/access-token",
-  getMe: "api/auth/me",
+  login: "/api/auth/login",
+  register: "/api/auth/signup",
+  refresh: "/api/auth/refresh",
+  logout: "/api/auth/logout",
+  accessToken: "/api/auth/access-token",
+  getMe: "/api/auth/me",
 
-  // Tickets
-  tickets: "api/tickets/",
-  ticket: "api/ticket/",
+  // Admin
+  updateProfile: "/api/admin/update-profile",
+  notifications: "/api/admin/notifications",
 };
+
+export const stringConstants = {
+  defaultEmail: "admin@example.com",
+}
+
+export const pages = {
+  home: "/",
+  login: "/account/login",
+  register: "/account/register",
+  onbording: "/admin/onboarding",
+  userDashboard: "/account/dashboard",
+  adminDashboard: "/admin",
+}
 
 export {
     REDIS_HOST,

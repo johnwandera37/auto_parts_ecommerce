@@ -6,7 +6,7 @@ import { serialize } from "cookie"; //serialize data into a cookie header
 import { getRedisClient } from "@/lib/redis";
 import { randomUUID } from "crypto"; //for multiple sessions
 import { errLog } from "@/utils/logger";
-import { getErrorMessage } from "@/utils/errMsg"; 
+import { getErrorMessage } from "@/utils/errMsg";
 import {
   ACCESS_TOKEN_MAX_AGE,
   REFRESH_TOKEN_MAX_AGE,
@@ -46,6 +46,8 @@ export async function POST(req: Request) {
     const accessToken = signToken({
       id: user.id,
       role: user.role,
+      email: user.email, // include email to reduce db calls
+      hasUpdatedCredentials: user.hasUpdatedCredentials // add flag for middlware handling on onboarding redirection
     });
 
     const sessionId = randomUUID(); // or nanoid()
@@ -53,15 +55,21 @@ export async function POST(req: Request) {
     const refreshToken = signRefreshToken({
       id: user.id,
       role: user.role,
+      email: user.email,
+      hasUpdatedCredentials: user.hasUpdatedCredentials,
       sessionId, // 👈 included in JWT payload for multiple session
     });
 
     // Set refresh token and user id in redis, ensure this is checked later, how keys are stored for cart, orders etc, whether to use differnt db
     try {
       const redis = await getRedisClient();
-      await redis.set( `auto_parts_ecommerce:session:${sessionId}`, refreshToken, {
-        EX: REFRESH_TOKEN_MAX_AGE,
-      }); // 7 days
+      await redis.set(
+        `auto_parts_ecommerce:session:${sessionId}`,
+        refreshToken,
+        {
+          EX: REFRESH_TOKEN_MAX_AGE,
+        }
+      ); // 7 days
     } catch (redisError) {
       return handleRedisError(redisError, "login handler", {
         status: 503,
@@ -86,6 +94,7 @@ export async function POST(req: Request) {
       sameSite: "lax",
     });
 
+    const isDefaultAdmin = user.email === "admin@example.com";
     const res = new NextResponse(
       JSON.stringify({
         message: "Login successful",
@@ -96,6 +105,7 @@ export async function POST(req: Request) {
           email: user.email,
           role: user.role,
         },
+        requiresProfileUpdate: isDefaultAdmin,
       }),
       {
         status: 200,

@@ -9,8 +9,9 @@ declare global {
 
   interface User {
     id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     role: UserRole;
-    email?: string;
+    email: string;
   }
 }

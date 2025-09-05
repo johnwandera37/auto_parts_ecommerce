@@ -9,26 +9,20 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
-import { endpoints } from "@/config/constants";
+import { endpoints, pages, stringConstants } from "@/config/constants";
 import { getErrorMessage } from "@/utils/errMsg";
 import { errLog, log } from "@/utils/logger";
 import Loader from "@/components/ui/loader";
-
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-};
+import { toast } from "@/hooks/use-toast";
 
 type AuthContextType = {
-  user: User | null;
+  user: User;
   logout: () => Promise<void>;
-  setUser: (user: User | null) => void;
+  setUser: (user: User) => void;
   isLoading: boolean;
   userError: any;
   setUserError: (error: any) => void;
+  isDefaultAdmin: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -39,13 +33,26 @@ export const useAuth = () => {
   return context;
 };
 
+// Helper hook for public routes that might not have a user
+export const useAuthOptional = () => {
+  const context = useContext(AuthContext);
+  return context; // Could be null or undefined
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userError, setUserError] = useState<
-    null | "unauthorized" | "network" | "other"
+    null | "service-unavailable" | "unauthorized" | "network" | "other"
   >(null);
+
+  // 👇 derived flag (recomputed whenever `user` changes)
+  const isDefaultAdmin = !!(
+    user &&
+    user.email === stringConstants.defaultEmail &&
+    user.role === "ADMIN"
+  );
 
   const fetchUser = async () => {
     try {
@@ -67,19 +74,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         `Axios message: ${axiosMessage} Backennd Error Messgae: ${backendErrMsg}`
       );
 
-      if (status === 401 || status === 404) {
-        setUser(null);
-        setUserError("unauthorized");
-      }
-
-      if (!error.response) {
-        setUser(null);
-        setUserError("network");
-      }
-
-      // Fallback
       setUser(null);
-      setUserError("other");
+
+      if (status === 503) {
+        setUserError("service-unavailable");
+      } else if (status === 401 || status === 404) {
+        setUserError("unauthorized");
+      } else if (!error.response) {
+        setUserError("network");
+      } else {
+        setUserError("other");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -95,9 +100,97 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Handle refresh errors from middleware
+  const checkAllRefreshErrors = () => {
+    // Check for middleware refresh errors
+    const middlewareRefreshFailed = document.cookie.includes(
+      "refresh_attempt_failed=true"
+    );
+    const middlewareErrorType = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("refresh_error_type="))
+      ?.split("=")[1];
+
+    // Check for axios refresh errors
+    const axiosRefreshFailed = document.cookie.includes(
+      "axios_refresh_failed=true"
+    );
+    const axiosErrorType = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("axios_refresh_error="))
+      ?.split("=")[1];
+
+    // Clear all cookies immediately
+    document.cookie =
+      "refresh_attempt_failed=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie =
+      "refresh_error_type=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie =
+      "axios_refresh_failed=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie =
+      "axios_refresh_error=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+    // Handle errors (prioritize middleware errors if both exist)
+    const errorSource = middlewareRefreshFailed
+      ? "middleware"
+      : axiosRefreshFailed
+      ? "axios"
+      : null;
+    const errorType = middlewareErrorType || axiosErrorType;
+
+    if (errorSource && errorType) {
+      switch (errorType) {
+        case "service-unavailable":
+        case "SERVICE_UNAVAILABLE":
+          toast({
+            title: "Service Unavailable",
+            description:
+              "Authentication service is temporarily down. Some features may not work properly.",
+            variant: "destructive",
+          });
+          break;
+        case "server-error":
+          toast({
+            title: "Temporary Issue",
+            description:
+              "Unable to refresh session. Please try again in a moment.",
+            variant: "destructive",
+          });
+          break;
+        case "network-error":
+        case "NETWORK_ERROR":
+          toast({
+            title: "Connection Issue",
+            description:
+              "Unable to connect to authentication service. Please check your internet connection.",
+            variant: "destructive",
+          });
+          break;
+        case "UNAUTHORIZED":
+        case "FORBIDDEN":
+        case "NOT_FOUND":
+          // Session expiry - middleware will handle redirect, just show toast
+          toast({
+            title: "Session Expired",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          });
+          break;
+        default:
+          toast({
+            title: "Authentication Issue",
+            description:
+              "There was a problem with your session. Please try refreshing the page.",
+            variant: "destructive",
+          });
+          break;
+      }
+    }
+  };
+
   useEffect(() => {
     const pathname = window.location.pathname;
-    const publicRoutes = ["/", "/register", "/docs"];
+    const publicRoutes = [pages.home, pages.register, pages.login];
 
     if (publicRoutes.includes(pathname)) {
       setIsLoading(false); // Skip fetching user, since it's a public route
@@ -106,11 +199,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Only fetch user if not on public route
     fetchUser();
+
+    // Check for errors on initial load
+    checkAllRefreshErrors();
+    // / Also check periodically for a few seconds (in case cookies are set after initial render)
+    const interval = setInterval(checkAllRefreshErrors, 1000);
+    setTimeout(() => clearInterval(interval), 5000);
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser, logout, isLoading, userError, setUserError }}
+      value={{
+        user: user!, // ✅ Non-null assertion - middleware guarantees this
+        setUser: setUser as (user: User) => void,
+        logout,
+        isLoading,
+        userError,
+        setUserError,
+        isDefaultAdmin,
+      }}
     >
       {isLoading ? <Loader variant="fullscreen" size="lg" /> : children}
     </AuthContext.Provider>

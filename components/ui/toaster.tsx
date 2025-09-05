@@ -21,7 +21,17 @@ export function Toaster() {
             <div className="grid gap-1">
               {title && <ToastTitle>{title}</ToastTitle>}
               {description && (
-                <ToastDescription>{description}</ToastDescription>
+                <ToastDescription>
+                   {typeof description === 'string' && description.includes('\n') ? (
+                    <ul className="list-disc list-inside space-y-1">
+                      {description.split('\n').map((line, index) => (
+                        <li key={index}>{line}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    description
+                  )}
+                </ToastDescription>
               )}
             </div>
             {action}
