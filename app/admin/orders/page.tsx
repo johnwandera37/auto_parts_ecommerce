@@ -1,15 +1,31 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { AdminNav } from "@/components/admin/admin-nav"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Search, Filter, Eye, Package, Truck, CheckCircle, Clock, AlertCircle } from "lucide-react"
+import { useState } from "react";
+import { AdminNav } from "@/components/admin/admin-nav";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Search,
+  Filter,
+  Eye,
+  Package,
+  Truck,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
+import { useAuthBoundary } from "@/hooks/useAuthBoundary";
 
 export default function AdminOrders() {
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState("");
 
   const orders = [
     {
@@ -62,34 +78,46 @@ export default function AdminOrders() {
       date: "2024-01-11",
       shippingAddress: "Zeil 12, 60313 Frankfurt",
     },
-  ]
+  ];
 
   const filteredOrders = orders.filter(
     (order) =>
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.email.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      order.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { variant: "secondary" as const, icon: Clock, label: "Pending" },
-      processing: { variant: "default" as const, icon: Package, label: "Processing" },
+      processing: {
+        variant: "default" as const,
+        icon: Package,
+        label: "Processing",
+      },
       shipped: { variant: "outline" as const, icon: Truck, label: "Shipped" },
-      completed: { variant: "default" as const, icon: CheckCircle, label: "Completed" },
-      cancelled: { variant: "destructive" as const, icon: AlertCircle, label: "Cancelled" },
-    }
+      completed: {
+        variant: "default" as const,
+        icon: CheckCircle,
+        label: "Completed",
+      },
+      cancelled: {
+        variant: "destructive" as const,
+        icon: AlertCircle,
+        label: "Cancelled",
+      },
+    };
 
-    const config = statusConfig[status as keyof typeof statusConfig]
-    const Icon = config.icon
+    const config = statusConfig[status as keyof typeof statusConfig];
+    const Icon = config.icon;
 
     return (
       <Badge variant={config.variant} className="flex items-center gap-1">
         <Icon className="h-3 w-3" />
         {config.label}
       </Badge>
-    )
-  }
+    );
+  };
 
   const orderStats = {
     total: orders.length,
@@ -97,16 +125,22 @@ export default function AdminOrders() {
     processing: orders.filter((o) => o.status === "processing").length,
     shipped: orders.filter((o) => o.status === "shipped").length,
     completed: orders.filter((o) => o.status === "completed").length,
-  }
+  };
+
+  const { user, isLoading, userError, LoaderUI, ErrorUI } = useAuthBoundary();
+  if (isLoading) return LoaderUI;
+  if (!user && userError) return ErrorUI;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminNav />
+      <AdminNav user={user} />
 
       <div className="lg:ml-64 p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-          <p className="text-gray-600">Manage customer orders and fulfillment</p>
+          <p className="text-gray-600">
+            Manage customer orders and fulfillment
+          </p>
         </div>
 
         {/* Order Stats */}
@@ -119,25 +153,33 @@ export default function AdminOrders() {
           </Card>
           <Card className="transition-all duration-300 hover:shadow-2xl hover:shadow-dp-gold/20 bg-gray-900 border-gray-800 transform hover:scale-105 hover:z-10 relative">
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-orange-600">{orderStats.pending}</div>
+              <div className="text-2xl font-bold text-orange-600">
+                {orderStats.pending}
+              </div>
               <p className="text-xs text-muted-foreground">Pending</p>
             </CardContent>
           </Card>
           <Card className="transition-all duration-300 hover:shadow-2xl hover:shadow-dp-gold/20 bg-gray-900 border-gray-800 transform hover:scale-105 hover:z-10 relative">
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-600">{orderStats.processing}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {orderStats.processing}
+              </div>
               <p className="text-xs text-muted-foreground">Processing</p>
             </CardContent>
           </Card>
           <Card className="transition-all duration-300 hover:shadow-2xl hover:shadow-dp-gold/20 bg-gray-900 border-gray-800 transform hover:scale-105 hover:z-10 relative">
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-purple-600">{orderStats.shipped}</div>
+              <div className="text-2xl font-bold text-purple-600">
+                {orderStats.shipped}
+              </div>
               <p className="text-xs text-muted-foreground">Shipped</p>
             </CardContent>
           </Card>
           <Card className="transition-all duration-300 hover:shadow-2xl hover:shadow-dp-gold/20 bg-gray-900 border-gray-800 transform hover:scale-105 hover:z-10 relative">
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">{orderStats.completed}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {orderStats.completed}
+              </div>
               <p className="text-xs text-muted-foreground">Completed</p>
             </CardContent>
           </Card>
@@ -190,7 +232,9 @@ export default function AdminOrders() {
                   <div className="flex items-center space-x-6">
                     <div className="text-right">
                       <p className="font-medium">€{order.total.toFixed(2)}</p>
-                      <p className="text-sm text-gray-600">{order.items} items</p>
+                      <p className="text-sm text-gray-600">
+                        {order.items} items
+                      </p>
                       <p className="text-xs text-gray-500">{order.date}</p>
                     </div>
 
@@ -209,5 +253,5 @@ export default function AdminOrders() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

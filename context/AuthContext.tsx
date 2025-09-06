@@ -18,6 +18,8 @@ import { toast } from "@/hooks/use-toast";
 type AuthContextType = {
   user: User;
   logout: () => Promise<void>;
+  isLoggingOut: boolean;
+  setIsLoggingOut: React.Dispatch<React.SetStateAction<boolean>>;
   setUser: (user: User) => void;
   isLoading: boolean;
   userError: any;
@@ -46,6 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userError, setUserError] = useState<
     null | "service-unavailable" | "unauthorized" | "network" | "other"
   >(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false); //global state for the logout
 
   // 👇 derived flag (recomputed whenever `user` changes)
   const isDefaultAdmin = !!(
@@ -91,12 +94,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
+    setIsLoggingOut(true);
     try {
-      await api.post(endpoints.logout);
+      const res = await api.post(endpoints.logout);
       setUser(null);
-      router.push("/");
+       toast({
+        title: "Success",
+        description: res?.data?.message ?? "Logout successful!",
+      });
+     router.push(pages.login);
     } catch (err) {
-      errLog("Logout failed:", getErrorMessage(err));
+      const errMsg = getErrorMessage(err);
+      errLog("Logout failed:", errMsg);
+      toast({
+        title: "Error",
+        description: errMsg ?? "Logout Failed!",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -213,6 +229,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user: user!, // ✅ Non-null assertion - middleware guarantees this
         setUser: setUser as (user: User) => void,
         logout,
+        isLoggingOut,
+        setIsLoggingOut,
         isLoading,
         userError,
         setUserError,

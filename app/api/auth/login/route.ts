@@ -61,21 +61,21 @@ export async function POST(req: Request) {
     });
 
     // Set refresh token and user id in redis, ensure this is checked later, how keys are stored for cart, orders etc, whether to use differnt db
-    try {
-      const redis = await getRedisClient();
-      await redis.set(
-        `auto_parts_ecommerce:session:${sessionId}`,
-        refreshToken,
-        {
-          EX: REFRESH_TOKEN_MAX_AGE,
-        }
-      ); // 7 days
-    } catch (redisError) {
-      return handleRedisError(redisError, "login handler", {
-        status: 503,
-        message: "Unable to create session. Please try again later.",
-      });
-    }
+    // try {
+    //   const redis = await getRedisClient();
+    //   await redis.set(
+    //     `auto_parts_ecommerce:session:${sessionId}`,
+    //     refreshToken,
+    //     {
+    //       EX: REFRESH_TOKEN_MAX_AGE,
+    //     }
+    //   ); // 7 days
+    // } catch (redisError) {
+    //   return handleRedisError(redisError, "login handler", {
+    //     status: 503,
+    //     message: "Unable to create session. Please try again later.",
+    //   });
+    // }
 
     //Set cookies
     const accessCookie = serialize("access_token", accessToken, {
@@ -123,7 +123,7 @@ export async function POST(req: Request) {
     const message = getErrorMessage(error);
     errLog("Login Error: ", message);
     return NextResponse.json(
-      { error: message ?? "Internal Server Error" },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }

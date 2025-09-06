@@ -35,6 +35,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { pages, stringConstants } from "@/config/constants";
 import { useAlert } from "@/hooks/useAlert";
 import Loader from "@/components/ui/loader";
+import { useAuthBoundary } from "@/hooks/useAuthBoundary";
 
 export default function AdminDashboard() {
   const stats = [
@@ -198,11 +199,10 @@ export default function AdminDashboard() {
     { name: "Email Service", status: "healthy", value: 99.1, color: "green" },
   ];
 
-  const { user, isLoading, userError, isDefaultAdmin } = useAuth(); // Get user from context
-  const { setError, setSuccess, AlertUI } = useAlert();
-  
-// show alerts for servive unavailable and unauthorized
- 
+  const { user, isLoading, userError, LoaderUI, ErrorUI } = useAuthBoundary();
+  if (isLoading) return LoaderUI;
+  if (!user && userError) return ErrorUI;
+
   return (
     <div className="min-h-screen bg-dp-black">
       <AdminNav user={user} />

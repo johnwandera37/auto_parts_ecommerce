@@ -1,9 +1,8 @@
 import { apiResponse, getRefreshTokenFromRequest } from "@/lib/cookieUtils";
 import { verifyRefreshToken } from "@/lib/jwt";
 import { getRedisClient } from "@/lib/redis";
-import { handleRedisError } from "@/lib/redisErrorMapperHandler";
 import { getErrorMessage } from "@/utils/errMsg";
-import { errLog } from "@/utils/logger";
+import { errLog, log } from "@/utils/logger";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -17,18 +16,18 @@ export async function POST(req: Request) {
     };
 
     // Delete the refresh token from Redis
-    try {
-      //delete the refresh token that is in redis
-      const redis = await getRedisClient();
-      await redis.del(`auto_parts_ecommerce:session:${payload.sessionId}`);
-    } catch (redisError) {
-      errLog(
-        "❌ Logout cleanup: failed to delete session from Redis",
-        getErrorMessage(redisError)
-      );
+    // try {
+    //   //delete the refresh token that is in redis
+    //   const redis = await getRedisClient();
+    //   await redis.del(`auto_parts_ecommerce:session:${payload.sessionId}`);
+    // } catch (redisError) {
+    //   errLog(
+    //     "❌ Logout cleanup: failed to delete session from Redis",
+    //     getErrorMessage(redisError)
+    //   );
 
-      // Continue with logout even if Redis fails, but log the error
-    }
+    //   // Continue with logout even if Redis fails, but log the error
+    // }
 
     // Return the response and clear cookies
     return apiResponse({
@@ -37,7 +36,7 @@ export async function POST(req: Request) {
       cookiesToClear: ["access_token", "refresh_token"],
     });
   } catch (err) {
-    errLog("Error in logout", err);
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    errLog("Error in logout:","Invalid token: ", err);
+    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
   }
 }

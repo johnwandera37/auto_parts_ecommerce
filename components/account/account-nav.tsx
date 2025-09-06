@@ -49,25 +49,15 @@ export function AccountNav({ user }: NavProps) {
     },
   ];
 
-  const { logout } = useAuth(); // Get lgout from context
-  const { toast } = useToast();
-  const [isLoggingOut, setIsLoggingOut] = useState(false); // local state for the logout
+  const { logout, isLoggingOut } = useAuth(); // Get logout from context
 
   const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await logout(); // clear user, token, etc.
-      router.push("/account/login"); // redirect to login
-    } catch (error) {
-      errLog("Logout failed:", getErrorMessage(error));
-      toast({
-        title: "Logout failed",
-        description: "An error occured during logout",
-      });
-
-      setIsLoggingOut(false); // re-enable UI on failure
-    }
+    await logout(); // clear user, token, redis session
   };
+
+  {
+    isLoggingOut && <Loader variant="fullscreen" size="lg" />;
+  }
 
   return (
     <>

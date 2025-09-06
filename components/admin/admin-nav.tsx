@@ -29,10 +29,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import router from "next/router";
+// import router from "next/router";
 import { errLog } from "@/utils/logger";
 import { getErrorMessage } from "@/utils/errMsg";
 import Loader from "../ui/loader";
+import { pages } from "@/config/constants";
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -50,30 +51,18 @@ export type NavProps = {
 export function AdminNav({ user }: NavProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { logout } = useAuth(); // Get lgout from context
-  const { toast } = useToast();
-  const [isLoggingOut, setIsLoggingOut] = useState(false); // local state for the logout
+  const { logout, isLoggingOut } = useAuth(); // Get logout from context
 
   const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await logout(); // clear user, token, etc.
-      router.push("/account/login"); // redirect to login
-    } catch (error) {
-      errLog("Logout failed:", getErrorMessage(error));
-      toast({
-        title: "Logout failed",
-        description: "An error occured during logout",
-      });
-
-      setIsLoggingOut(false); // re-enable UI on failure
-    }
+    await logout(); // clear user, token, redis session
   };
+
+  {
+    isLoggingOut && <Loader variant="fullscreen" size="lg" />;
+  }
 
   return (
     <>
-      {isLoggingOut && <Loader variant="fullscreen" size="lg" />}
-      
       {/* Mobile sidebar */}
       <div
         className={cn(
@@ -209,7 +198,9 @@ export function AdminNav({ user }: NavProps) {
                 >
                   <div className="text-right">
                     <p className="text-sm font-medium text-white">
-                      {`${user?.firstName} ${user?.lastName}` || "Admin User"}
+                      {`${user?.firstName ?? "Admin"} ${
+                        user?.lastName ?? "User"
+                      }`.trim()}
                     </p>
                     <p className="text-xs text-gray-400">
                       {user?.email ?? "admin@deutschepoint.de"}

@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { usePathname } from "next/navigation"
-import { ChevronDown, Menu, Search, ShoppingCart, User, X } from "lucide-react"
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { ChevronDown, Menu, Search, ShoppingCart, User, X } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,17 +14,22 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export function Header() {
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const pathname = usePathname()
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const pathname = usePathname();
 
   const isActive = (path: string) => {
-    return pathname === path
-  }
+    return pathname === path;
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-dp-black border-gray-800">
@@ -40,27 +45,50 @@ export function Header() {
               <span className="sr-only">Toggle menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[300px] sm:w-[400px] bg-dp-black border-gray-800">
+          <SheetContent
+            side="left"
+            className="w-[300px] sm:w-[400px] bg-dp-black border-gray-800"
+          >
+            {/* Add SheetTitle for accessibility */}
+            <SheetTitle className="sr-only">Main Navigation Menu</SheetTitle>
             <nav className="flex flex-col gap-4">
               <Link href="/" className="text-lg font-bold text-dp-gold">
                 Home
               </Link>
-              <Link href="/shop" className="text-lg font-medium text-white hover:text-dp-gold transition-colors">
+              <Link
+                href="/shop"
+                className="text-lg font-medium text-white hover:text-dp-gold transition-colors"
+              >
                 Shop
               </Link>
-              <Link href="/categories" className="text-lg font-medium text-white hover:text-dp-gold transition-colors">
+              <Link
+                href="/categories"
+                className="text-lg font-medium text-white hover:text-dp-gold transition-colors"
+              >
                 Categories
               </Link>
-              <Link href="/brands" className="text-lg font-medium text-white hover:text-dp-gold transition-colors">
+              <Link
+                href="/brands"
+                className="text-lg font-medium text-white hover:text-dp-gold transition-colors"
+              >
                 Brands
               </Link>
-              <Link href="/deals" className="text-lg font-medium text-white hover:text-dp-gold transition-colors">
+              <Link
+                href="/deals"
+                className="text-lg font-medium text-white hover:text-dp-gold transition-colors"
+              >
                 Deals
               </Link>
-              <Link href="/about" className="text-lg font-medium text-white hover:text-dp-gold transition-colors">
+              <Link
+                href="/about"
+                className="text-lg font-medium text-white hover:text-dp-gold transition-colors"
+              >
                 About
               </Link>
-              <Link href="/contact" className="text-lg font-medium text-white hover:text-dp-gold transition-colors">
+              <Link
+                href="/contact"
+                className="text-lg font-medium text-white hover:text-dp-gold transition-colors"
+              >
                 Contact
               </Link>
             </nav>
@@ -76,7 +104,9 @@ export function Header() {
               className="object-contain rounded-full"
             />
           </div>
-          <span className="text-xl font-bold tracking-tight text-dp-gold">Deutsche Point</span>
+          <span className="text-xl font-bold tracking-tight text-dp-gold">
+            Deutsche Point
+          </span>
         </Link>
 
         <nav className="hidden md:flex md:flex-1 md:items-center md:gap-8">
@@ -110,11 +140,19 @@ export function Header() {
                 />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[200px] bg-gray-900 border-gray-700">
-              <DropdownMenuLabel className="text-dp-gold">Shop By</DropdownMenuLabel>
+            <DropdownMenuContent
+              align="start"
+              className="w-[200px] bg-gray-900 border-gray-700"
+            >
+              <DropdownMenuLabel className="text-dp-gold">
+                Shop By
+              </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-700" />
               <DropdownMenuItem asChild>
-                <Link href="/shop" className="cursor-pointer text-white hover:text-dp-gold focus:text-dp-gold">
+                <Link
+                  href="/shop"
+                  className="cursor-pointer text-white hover:text-dp-gold focus:text-dp-gold"
+                >
                   All Products
                 </Link>
               </DropdownMenuItem>
@@ -161,8 +199,13 @@ export function Header() {
                 />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[200px] bg-gray-900 border-gray-700">
-              <DropdownMenuLabel className="text-dp-gold">Part Categories</DropdownMenuLabel>
+            <DropdownMenuContent
+              align="start"
+              className="w-[200px] bg-gray-900 border-gray-700"
+            >
+              <DropdownMenuLabel className="text-dp-gold">
+                Part Categories
+              </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-700" />
               <DropdownMenuItem asChild>
                 <Link
@@ -214,7 +257,10 @@ export function Header() {
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-gray-700" />
               <DropdownMenuItem asChild>
-                <Link href="/categories" className="cursor-pointer text-white hover:text-dp-gold focus:text-dp-gold">
+                <Link
+                  href="/categories"
+                  className="cursor-pointer text-white hover:text-dp-gold focus:text-dp-gold"
+                >
                   View All Categories
                 </Link>
               </DropdownMenuItem>
@@ -237,11 +283,19 @@ export function Header() {
                 />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[200px] bg-gray-900 border-gray-700">
-              <DropdownMenuLabel className="text-dp-gold">Our Brands</DropdownMenuLabel>
+            <DropdownMenuContent
+              align="start"
+              className="w-[200px] bg-gray-900 border-gray-700"
+            >
+              <DropdownMenuLabel className="text-dp-gold">
+                Our Brands
+              </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-700" />
               <DropdownMenuItem asChild>
-                <Link href="/brands/bmw" className="cursor-pointer text-white hover:text-dp-gold focus:text-dp-gold">
+                <Link
+                  href="/brands/bmw"
+                  className="cursor-pointer text-white hover:text-dp-gold focus:text-dp-gold"
+                >
                   BMW
                 </Link>
               </DropdownMenuItem>
@@ -255,7 +309,10 @@ export function Header() {
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-gray-700" />
               <DropdownMenuItem asChild>
-                <Link href="/brands" className="cursor-pointer text-white hover:text-dp-gold focus:text-dp-gold">
+                <Link
+                  href="/brands"
+                  className="cursor-pointer text-white hover:text-dp-gold focus:text-dp-gold"
+                >
                   View All Brands
                 </Link>
               </DropdownMenuItem>
@@ -315,11 +372,19 @@ export function Header() {
                 <span className="sr-only">Account</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[200px] bg-gray-900 border-gray-700">
-              <DropdownMenuLabel className="text-dp-gold">My Account</DropdownMenuLabel>
+            <DropdownMenuContent
+              align="end"
+              className="w-[200px] bg-gray-900 border-gray-700"
+            >
+              <DropdownMenuLabel className="text-dp-gold">
+                My Account
+              </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-700" />
               <DropdownMenuItem asChild>
-                <Link href="/account/login" className="cursor-pointer text-white hover:text-dp-gold focus:text-dp-gold">
+                <Link
+                  href="/account/login"
+                  className="cursor-pointer text-white hover:text-dp-gold focus:text-dp-gold"
+                >
                   Login
                 </Link>
               </DropdownMenuItem>
@@ -362,10 +427,17 @@ export function Header() {
                 <span className="sr-only">Cart</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[300px] bg-gray-900 border-gray-700">
-              <DropdownMenuLabel className="text-dp-gold">Shopping Cart</DropdownMenuLabel>
+            <DropdownMenuContent
+              align="end"
+              className="w-[300px] bg-gray-900 border-gray-700"
+            >
+              <DropdownMenuLabel className="text-dp-gold">
+                Shopping Cart
+              </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-700" />
-              <div className="p-4 text-center text-sm text-gray-400">Your cart is empty</div>
+              <div className="p-4 text-center text-sm text-gray-400">
+                Your cart is empty
+              </div>
               <DropdownMenuSeparator className="bg-gray-700" />
               <div className="p-4">
                 <Button className="w-full bg-dp-gold text-dp-black hover:bg-dp-red hover:text-white transition-all duration-300">
@@ -377,5 +449,5 @@ export function Header() {
         </div>
       </div>
     </header>
-  )
+  );
 }

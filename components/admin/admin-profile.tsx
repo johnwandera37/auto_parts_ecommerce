@@ -1,19 +1,41 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { User, Mail, Phone, MapPin, Calendar, Shield, Clock, Settings, Edit3, Camera } from "lucide-react"
+import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Shield,
+  Clock,
+  Settings,
+  Edit3,
+  Camera,
+} from "lucide-react";
 
 interface AdminProfileProps {
-  showEditButton?: boolean
-  compact?: boolean
+  showEditButton?: boolean;
+  compact?: boolean;
+  user: User;
 }
 
-export function AdminProfile({ showEditButton = true, compact = false }: AdminProfileProps) {
-  const [isEditing, setIsEditing] = useState(false)
+export function AdminProfile({
+  showEditButton = true,
+  compact = false,
+  user,
+}: AdminProfileProps) {
+  const [isEditing, setIsEditing] = useState(false);
 
   // Mock admin data - in real app this would come from props or API
   const adminData = {
@@ -26,20 +48,28 @@ export function AdminProfile({ showEditButton = true, compact = false }: AdminPr
     joinDate: "January 2023",
     lastLogin: "2 hours ago",
     avatar: "/admin-profile.png",
-    permissions: ["Full System Access", "User Management", "Financial Reports", "System Settings"],
+    permissions: [
+      "Full System Access",
+      "User Management",
+      "Financial Reports",
+      "System Settings",
+    ],
     stats: {
       ordersManaged: 1250,
       customersHelped: 890,
       productsAdded: 340,
       reportsGenerated: 45,
     },
-  }
+  };
 
   if (compact) {
     return (
       <div className="flex items-center space-x-3 p-3 bg-white rounded-lg border">
         <Avatar className="h-10 w-10">
-          <AvatarImage src={adminData.avatar || "/placeholder.svg"} alt={adminData.name} />
+          <AvatarImage
+            src={adminData.avatar || "/placeholder.svg"}
+            alt={adminData.name}
+          />
           <AvatarFallback className="bg-red-100 text-red-600">
             {adminData.name
               .split(" ")
@@ -48,14 +78,16 @@ export function AdminProfile({ showEditButton = true, compact = false }: AdminPr
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate">{adminData.name}</p>
+          <p className="text-sm font-medium text-gray-900 truncate">
+            {adminData.name}
+          </p>
           <p className="text-xs text-gray-500 truncate">{adminData.role}</p>
         </div>
         <Badge variant="outline" className="text-xs">
           Online
         </Badge>
       </div>
-    )
+    );
   }
 
   return (
@@ -66,7 +98,10 @@ export function AdminProfile({ showEditButton = true, compact = false }: AdminPr
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
             <div className="relative">
               <Avatar className="h-24 w-24">
-                <AvatarImage src={adminData.avatar || "/placeholder.svg"} alt={adminData.name} />
+                <AvatarImage
+                  src={adminData.avatar || "/placeholder.svg"}
+                  alt={adminData.name}
+                />
                 <AvatarFallback className="bg-red-100 text-red-600 text-xl">
                   {adminData.name
                     .split(" ")
@@ -86,11 +121,21 @@ export function AdminProfile({ showEditButton = true, compact = false }: AdminPr
             <div className="flex-1 space-y-2">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">{adminData.name}</h2>
-                  <p className="text-gray-600">{adminData.role}</p>
+                  <h2 className="text-2xl font-bold">
+                    {" "}
+                    {`${user?.firstName ?? "Admin"} ${
+                      user?.lastName ?? "User"
+                    }`.trim()}
+                  </h2>
+                  <p className="text-gray-600">{user.role}</p>
                 </div>
                 {showEditButton && (
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)} className="mt-2 sm:mt-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(!isEditing)}
+                    className="mt-2 sm:mt-0"
+                  >
                     <Edit3 className="mr-2 h-4 w-4" />
                     Edit Profile
                   </Button>
@@ -103,7 +148,10 @@ export function AdminProfile({ showEditButton = true, compact = false }: AdminPr
                   {adminData.role}
                 </Badge>
                 <Badge variant="outline">{adminData.department}</Badge>
-                <Badge variant="secondary" className="bg-green-100 text-green-700">
+                <Badge
+                  variant="secondary"
+                  className="bg-green-100 text-green-700"
+                >
                   Active
                 </Badge>
               </div>
@@ -126,7 +174,7 @@ export function AdminProfile({ showEditButton = true, compact = false }: AdminPr
               <Mail className="h-4 w-4 text-gray-400" />
               <div>
                 <p className="text-sm font-medium">Email</p>
-                <p className="text-sm text-gray-600">{adminData.email}</p>
+                <p className="text-sm text-gray-600">{user.email}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -184,7 +232,9 @@ export function AdminProfile({ showEditButton = true, compact = false }: AdminPr
       <Card>
         <CardHeader>
           <CardTitle>Permissions & Access</CardTitle>
-          <CardDescription>Current administrative permissions and system access levels</CardDescription>
+          <CardDescription>
+            Current administrative permissions and system access levels
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -202,29 +252,39 @@ export function AdminProfile({ showEditButton = true, compact = false }: AdminPr
       <Card>
         <CardHeader>
           <CardTitle>Activity Overview</CardTitle>
-          <CardDescription>Your administrative activity and contributions</CardDescription>
+          <CardDescription>
+            Your administrative activity and contributions
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">{adminData.stats.ordersManaged}</div>
+              <div className="text-2xl font-bold text-red-600">
+                {adminData.stats.ordersManaged}
+              </div>
               <div className="text-sm text-gray-600">Orders Managed</div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{adminData.stats.customersHelped}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {adminData.stats.customersHelped}
+              </div>
               <div className="text-sm text-gray-600">Customers Helped</div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{adminData.stats.productsAdded}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {adminData.stats.productsAdded}
+              </div>
               <div className="text-sm text-gray-600">Products Added</div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">{adminData.stats.reportsGenerated}</div>
+              <div className="text-2xl font-bold text-purple-600">
+                {adminData.stats.reportsGenerated}
+              </div>
               <div className="text-sm text-gray-600">Reports Generated</div>
             </div>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

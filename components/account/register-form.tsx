@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { fetcher } from "@/lib/fetcher";
-import { endpoints } from "@/config/constants";
+import { endpoints, pages } from "@/config/constants";
 import { signupSchema } from "@/lib/zodSchema";
 import { handleFormError } from "@/utils/handleFormErrors";
 import { useAlert } from "@/hooks/useAlert";
@@ -89,7 +89,7 @@ export function RegisterForm() {
       });
 
       setTimeout(() => {
-        router.push("/login");
+        router.push(pages.login);
       }, 2000);
     } catch (err: any) {
       handleFormError(err, setError, toast);

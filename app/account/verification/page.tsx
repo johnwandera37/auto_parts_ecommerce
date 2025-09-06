@@ -1,16 +1,12 @@
+"use client";
+
 import Link from "next/link"
-import type { Metadata } from "next"
 import { Mail, ArrowRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-
-export const metadata: Metadata = {
-  title: "Verify Your Email | Deutsche Point",
-  description: "Please verify your email address to complete your registration.",
-}
 
 export default function VerificationPage() {
   return (

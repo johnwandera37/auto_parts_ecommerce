@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Search, Filter, Eye, Mail, Phone, MapPin, Calendar, ShoppingBag } from "lucide-react"
+import { useAuthBoundary } from "@/hooks/useAuthBoundary"
 
 export default function AdminCustomers() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -105,9 +106,13 @@ export default function AdminCustomers() {
     new: customers.filter((c) => c.status === "new").length,
   }
 
+    const { user, isLoading, userError, LoaderUI, ErrorUI } = useAuthBoundary();
+  if (isLoading) return LoaderUI;
+  if (!user && userError) return ErrorUI;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminNav />
+      <AdminNav user={user} />
 
       <div className="lg:ml-64 p-6">
         <div className="mb-8">

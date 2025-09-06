@@ -39,7 +39,7 @@ export async function middleware(req: NextRequest) {
   // --- AUTHENTICATION CHECK ---
   const isProtectedRoute =
     pathname.startsWith("/admin") || pathname.startsWith("/account");
-  const publicAccountRoutes = ["/account/login", "account/register"];
+  const publicAccountRoutes = ["/account/login", "/account/register"];
   const isPublicAccount = publicAccountRoutes.some((route) =>
     pathname.startsWith(route)
   );

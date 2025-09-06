@@ -50,34 +50,29 @@ export function AdminSettingsForm() {
     }
   };
 
+  const tabTriggerClass =
+    "rounded-none border-b-2 border-transparent px-4 py-2 " +
+    "data-[state=active]:border-red-600 " +
+    "data-[state=active]:text-red-600 " +
+    "data-[state=active]:bg-transparent " +
+    "data-[state=active]:shadow-none";
+
   return (
     <Tabs defaultValue="profile" className="space-y-4">
       <TabsList className="w-full justify-start border-b bg-transparent p-0">
-        <TabsTrigger
-          value="profile"
-          className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-red-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-        >
+        <TabsTrigger value="profile" className={tabTriggerClass}>
           <User className="mr-2 h-4 w-4" />
           Profile
         </TabsTrigger>
-        <TabsTrigger
-          value="security"
-          className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-red-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-        >
+        <TabsTrigger value="security" className={tabTriggerClass}>
           <Lock className="mr-2 h-4 w-4" />
           Security
         </TabsTrigger>
-        <TabsTrigger
-          value="permissions"
-          className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-red-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-        >
+        <TabsTrigger value="permissions" className={tabTriggerClass}>
           <Shield className="mr-2 h-4 w-4" />
           Permissions
         </TabsTrigger>
-        <TabsTrigger
-          value="notifications"
-          className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-red-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-        >
+        <TabsTrigger value="notifications" className={tabTriggerClass}>
           <Bell className="mr-2 h-4 w-4" />
           Notifications
         </TabsTrigger>

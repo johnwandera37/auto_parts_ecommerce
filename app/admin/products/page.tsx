@@ -1,16 +1,23 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { AdminNav } from "@/components/admin/admin-nav"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Search, Filter, Edit, Trash2, Eye } from "lucide-react"
-import Link from "next/link"
+import { useState } from "react";
+import { AdminNav } from "@/components/admin/admin-nav";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, Filter, Edit, Trash2, Eye } from "lucide-react";
+import Link from "next/link";
+import { useAuthBoundary } from "@/hooks/useAuthBoundary";
 
 export default function AdminProducts() {
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState("");
 
   const products = [
     {
@@ -68,28 +75,32 @@ export default function AdminProducts() {
       status: "active",
       image: "/placeholder.svg?height=60&width=60",
     },
-  ]
+  ];
 
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.brand.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      product.brand.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getStatusBadge = (status: string, stock: number) => {
     if (status === "out_of_stock" || stock === 0) {
-      return <Badge variant="destructive">Out of Stock</Badge>
+      return <Badge variant="destructive">Out of Stock</Badge>;
     }
     if (status === "low_stock" || stock < 10) {
-      return <Badge variant="secondary">Low Stock</Badge>
+      return <Badge variant="secondary">Low Stock</Badge>;
     }
-    return <Badge variant="default">In Stock</Badge>
-  }
+    return <Badge variant="default">In Stock</Badge>;
+  };
+
+  const { user, isLoading, userError, LoaderUI, ErrorUI } = useAuthBoundary();
+  if (isLoading) return LoaderUI;
+  if (!user && userError) return ErrorUI;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminNav />
+      <AdminNav user={user} />
 
       <div className="lg:ml-64 p-6">
         <div className="mb-8">
@@ -134,7 +145,9 @@ export default function AdminProducts() {
         <Card className="transition-all duration-300 hover:shadow-2xl hover:shadow-dp-gold/20 bg-gray-900 border-gray-800 transform hover:scale-105 hover:z-10 relative">
           <CardHeader>
             <CardTitle>All Products ({filteredProducts.length})</CardTitle>
-            <CardDescription>Manage your product catalog and inventory levels</CardDescription>
+            <CardDescription>
+              Manage your product catalog and inventory levels
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -162,7 +175,9 @@ export default function AdminProducts() {
                   <div className="flex items-center space-x-6">
                     <div className="text-right">
                       <p className="font-medium">€{product.price}</p>
-                      <p className="text-sm text-gray-600">Stock: {product.stock}</p>
+                      <p className="text-sm text-gray-600">
+                        Stock: {product.stock}
+                      </p>
                     </div>
 
                     <div>{getStatusBadge(product.status, product.stock)}</div>
@@ -174,7 +189,11 @@ export default function AdminProducts() {
                       <Button variant="ghost" size="sm">
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -186,5 +205,5 @@ export default function AdminProducts() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
