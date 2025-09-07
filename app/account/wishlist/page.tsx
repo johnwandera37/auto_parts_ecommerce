@@ -5,6 +5,7 @@ import { Footer } from "@/components/footer";
 import { AccountNav } from "@/components/account/account-nav";
 import { WishlistItems } from "@/components/account/wishlist-items";
 import { useAuthBoundary } from "@/hooks/useAuthBoundary";
+import { PageHeader } from "@/components/account/page-header";
 
 export default function WishlistPage() {
   const { user, isLoading, userError, LoaderUI, ErrorUI } = useAuthBoundary();
@@ -15,12 +16,10 @@ export default function WishlistPage() {
       <Header />
       <main className="flex-1 bg-gray-50">
         <div className="container px-4 py-8 md:px-6 md:py-12">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight">My Wishlist</h1>
-            <p className="text-muted-foreground">
-              Items you've saved for later
-            </p>
-          </div>
+          <PageHeader
+            title="My Wishlist"
+            description="Items you've saved for later"
+          />
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[240px_1fr]">
             <AccountNav user={user} />

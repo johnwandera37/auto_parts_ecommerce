@@ -57,12 +57,10 @@ export function AdminNav({ user }: NavProps) {
     await logout(); // clear user, token, redis session
   };
 
-  {
-    isLoggingOut && <Loader variant="fullscreen" size="lg" />;
-  }
-
   return (
     <>
+    {isLoggingOut && <Loader variant="fullscreen" size="lg" />}
+
       {/* Mobile sidebar */}
       <div
         className={cn(

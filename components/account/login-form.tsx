@@ -21,7 +21,7 @@ import { useAlert } from "@/hooks/useAlert";
 import { toast } from "@/hooks/use-toast";
 import Loader from "../ui/loader";
 import { usePasswordField } from "@/hooks/usePasswordField";
-import { useAuth, useAuthOptional } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { setAccessToken } from "@/utils/tokenStore";
 
 export function LoginForm() {
@@ -34,7 +34,7 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const { setError, setSuccess, AlertUI } = useAlert();
   const router = useRouter();
-  const { setUser } = useAuth();
+  const { setUser, SetIsLoggedIn } = useAuth();
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -85,7 +85,8 @@ export function LoginForm() {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
-      // 3. 🔥 Store user and logged in state in context
+      // 3. 🔥 Store user and and update logged in state in context
+      SetIsLoggedIn(true);
       setUser(loginResponse.user);
 
       // 2. If success, redirect to dashboard / update default profile

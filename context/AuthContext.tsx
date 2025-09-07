@@ -20,6 +20,8 @@ type AuthContextType = {
   logout: () => Promise<void>;
   isLoggingOut: boolean;
   setIsLoggingOut: React.Dispatch<React.SetStateAction<boolean>>;
+  isLoggedIn: boolean;
+  SetIsLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
   setUser: (user: User) => void;
   isLoading: boolean;
   userError: any;
@@ -49,6 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     null | "service-unavailable" | "unauthorized" | "network" | "other"
   >(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false); //global state for the logout
+  const [isLoggedIn, SetIsLoggedIn] = useState(false); //global state for the log in state
 
   // 👇 derived flag (recomputed whenever `user` changes)
   const isDefaultAdmin = !!(
@@ -231,6 +234,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         logout,
         isLoggingOut,
         setIsLoggingOut,
+        isLoggedIn,
+        SetIsLoggedIn,
         isLoading,
         userError,
         setUserError,

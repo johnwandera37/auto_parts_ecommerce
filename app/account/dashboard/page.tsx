@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { log } from "@/utils/logger";
 import { pages } from "@/config/constants";
 import { useAuthBoundary } from "@/hooks/useAuthBoundary";
+import { PageHeader } from "@/components/account/page-header";
 
 export default function DashboardPage() {
   const { user, isLoading, userError, LoaderUI, ErrorUI } = useAuthBoundary();
@@ -31,12 +32,10 @@ export default function DashboardPage() {
       <Header />
       <main className="flex-1 bg-gray-50">
         <div className="container px-4 py-8 md:px-6 md:py-12">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight">My Account</h1>
-            <p className="text-muted-foreground">
-              Manage your account settings and view your order history
-            </p>
-          </div>
+          <PageHeader
+            title="My Account"
+            description="Manage your account settings and view your order history"
+          />
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[240px_1fr]">
             <AccountNav user={user} />

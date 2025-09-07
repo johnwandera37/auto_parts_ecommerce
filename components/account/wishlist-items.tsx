@@ -1,12 +1,13 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { Heart, Star, Trash2 } from "lucide-react"
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Heart, Star, Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageDescription } from "./page-description";
 
 export function WishlistItems() {
   const [wishlistItems, setWishlistItems] = useState([
@@ -73,11 +74,11 @@ export function WishlistItems() {
       image: "/placeholder.svg?height=200&width=200",
       addedOn: "June 15, 2023",
     },
-  ])
+  ]);
 
   const removeFromWishlist = (id: number) => {
-    setWishlistItems(wishlistItems.filter((item) => item.id !== id))
-  }
+    setWishlistItems(wishlistItems.filter((item) => item.id !== id));
+  };
 
   return (
     <div>
@@ -88,7 +89,8 @@ export function WishlistItems() {
           </div>
           <h3 className="mt-4 text-lg font-medium">Your Wishlist is Empty</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            Save items you're interested in for later by clicking the heart icon on product pages.
+            Save items you're interested in for later by clicking the heart icon
+            on product pages.
           </p>
           <Button asChild className="mt-4 bg-red-600 hover:bg-red-700">
             <Link href="/shop">Browse Products</Link>
@@ -97,9 +99,11 @@ export function WishlistItems() {
       ) : (
         <div className="space-y-8">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-            <p className="text-sm text-muted-foreground">
-              You have <span className="font-medium">{wishlistItems.length}</span> items in your wishlist
-            </p>
+            <PageDescription>
+              You have{" "}
+              <span className="font-medium">{wishlistItems.length}</span> items
+              in your wishlist
+            </PageDescription>
             <Button variant="outline" size="sm">
               Add All to Cart
             </Button>
@@ -123,9 +127,13 @@ export function WishlistItems() {
                       />
                     </div>
                     <div className="flex-1">
-                      <div className="text-sm text-muted-foreground">{item.category}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {item.category}
+                      </div>
                       <Link href={`/shop/product/${item.id}`}>
-                        <h3 className="font-medium hover:text-red-600">{item.name}</h3>
+                        <h3 className="font-medium hover:text-red-600">
+                          {item.name}
+                        </h3>
                       </Link>
                       <div className="mt-1 flex items-center gap-2">
                         <div className="flex">
@@ -133,19 +141,33 @@ export function WishlistItems() {
                             <Star
                               key={i}
                               className={`h-4 w-4 ${
-                                i < Math.floor(item.rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                                i < Math.floor(item.rating)
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-gray-300"
                               }`}
                             />
                           ))}
                         </div>
-                        <span className="text-sm text-muted-foreground">{item.rating}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {item.rating}
+                        </span>
                       </div>
-                      <div className="mt-2 font-bold">€{item.price.toFixed(2)}</div>
-                      <div className="mt-1 text-xs text-muted-foreground">Added on {item.addedOn}</div>
+                      <div className="mt-2 font-bold">
+                        €{item.price.toFixed(2)}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Added on {item.addedOn}
+                      </div>
                     </div>
                     <div className="flex w-full flex-col gap-2 sm:w-auto">
-                      <Button className="bg-red-600 hover:bg-red-700">Add to Cart</Button>
-                      <Button variant="outline" size="sm" onClick={() => removeFromWishlist(item.id)}>
+                      <Button className="bg-red-600 hover:bg-red-700">
+                        Add to Cart
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeFromWishlist(item.id)}
+                      >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Remove
                       </Button>
@@ -158,5 +180,5 @@ export function WishlistItems() {
         </div>
       )}
     </div>
-  )
+  );
 }

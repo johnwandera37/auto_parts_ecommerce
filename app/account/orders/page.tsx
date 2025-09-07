@@ -1,12 +1,12 @@
 "use client";
 
-
 import { Input } from "@/components/ui/input";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { AccountNav } from "@/components/account/account-nav";
 import { OrdersList } from "@/components/account/orders-list";
 import { useAuthBoundary } from "@/hooks/useAuthBoundary";
+import { PageHeader } from "@/components/account/page-header";
 
 export default function OrdersPage() {
   const { user, isLoading, userError, LoaderUI, ErrorUI } = useAuthBoundary();
@@ -17,10 +17,10 @@ export default function OrdersPage() {
       <Header />
       <main className="flex-1 bg-gray-50">
         <div className="container px-4 py-8 md:px-6 md:py-12">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight">Order History</h1>
-            <p className="text-muted-foreground">View and track your orders</p>
-          </div>
+          <PageHeader
+            title="Order History"
+            description="View and track your orders"
+          />
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[240px_1fr]">
             <AccountNav user={user} />

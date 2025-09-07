@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAlert } from "@/hooks/useAlert";
+import { tabTriggerClass } from "../account/account-settings-form";
 
 export function AdminSettingsForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -49,13 +50,6 @@ export function AdminSettingsForm() {
       setIsLoading(false);
     }
   };
-
-  const tabTriggerClass =
-    "rounded-none border-b-2 border-transparent px-4 py-2 " +
-    "data-[state=active]:border-red-600 " +
-    "data-[state=active]:text-red-600 " +
-    "data-[state=active]:bg-transparent " +
-    "data-[state=active]:shadow-none";
 
   return (
     <Tabs defaultValue="profile" className="space-y-4">

@@ -1,67 +1,76 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Loader2, Save } from "lucide-react"
+import { useState } from "react";
+import { Loader2, Save } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Separator } from "@/components/ui/separator"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+export const tabTriggerClass = `
+    rounded-none 
+    border-b-2 
+    border-transparent 
+    px-4 
+    py-2 
+    text-gray-700 
+    dark:text-gray-300
+    data-[state=active]:border-red-600 
+    data-[state=active]:text-red-600
+    data-[state=active]:bg-transparent 
+    data-[state=active]:shadow-none
+`;
 
 export function AccountSettingsForm() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [success, setSuccess] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setSuccess(null)
-    setIsLoading(true)
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setIsLoading(true);
 
     // Simulate API call
     try {
       // In a real app, this would be an API call to update user settings
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      setSuccess("Your account settings have been updated successfully.")
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setSuccess("Your account settings have been updated successfully.");
     } catch (err) {
-      setError("An error occurred. Please try again later.")
+      setError("An error occurred. Please try again later.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Tabs defaultValue="personal" className="space-y-4">
       <TabsList className="w-full justify-start border-b bg-transparent p-0">
-        <TabsTrigger
-          value="personal"
-          className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-red-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-        >
+        <TabsTrigger value="personal" className={tabTriggerClass}>
           Personal Information
         </TabsTrigger>
-        <TabsTrigger
-          value="password"
-          className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-red-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-        >
+        <TabsTrigger value="password" className={tabTriggerClass}>
           Password
         </TabsTrigger>
-        <TabsTrigger
-          value="preferences"
-          className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-red-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-        >
+        <TabsTrigger value="preferences" className={tabTriggerClass}>
           Preferences
         </TabsTrigger>
-        <TabsTrigger
-          value="delete"
-          className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-red-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-        >
+        <TabsTrigger value="delete" className={tabTriggerClass}>
           Delete Account
         </TabsTrigger>
       </TabsList>
@@ -70,10 +79,16 @@ export function AccountSettingsForm() {
         <Card>
           <CardHeader>
             <CardTitle>Personal Information</CardTitle>
-            <CardDescription>Update your personal details and contact information</CardDescription>
+            <CardDescription>
+              Update your personal details and contact information
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form id="personal-form" onSubmit={handleSubmit} className="space-y-4">
+            <form
+              id="personal-form"
+              onSubmit={handleSubmit}
+              className="space-y-4"
+            >
               {success && (
                 <Alert className="bg-green-50 text-green-600">
                   <AlertDescription>{success}</AlertDescription>
@@ -98,7 +113,12 @@ export function AccountSettingsForm() {
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue="john.doe@example.com" required />
+                <Input
+                  id="email"
+                  type="email"
+                  defaultValue="john.doe@example.com"
+                  required
+                />
               </div>
 
               <div className="space-y-2">
@@ -135,7 +155,12 @@ export function AccountSettingsForm() {
             </form>
           </CardContent>
           <CardFooter className="flex justify-end">
-            <Button type="submit" form="personal-form" className="bg-red-600 hover:bg-red-700" disabled={isLoading}>
+            <Button
+              type="submit"
+              form="personal-form"
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving
@@ -154,10 +179,16 @@ export function AccountSettingsForm() {
         <Card>
           <CardHeader>
             <CardTitle>Change Password</CardTitle>
-            <CardDescription>Update your password to keep your account secure</CardDescription>
+            <CardDescription>
+              Update your password to keep your account secure
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form id="password-form" onSubmit={handleSubmit} className="space-y-4">
+            <form
+              id="password-form"
+              onSubmit={handleSubmit}
+              className="space-y-4"
+            >
               {success && (
                 <Alert className="bg-green-50 text-green-600">
                   <AlertDescription>{success}</AlertDescription>
@@ -178,7 +209,8 @@ export function AccountSettingsForm() {
                 <Label htmlFor="new-password">New Password</Label>
                 <Input id="new-password" type="password" required />
                 <p className="text-xs text-muted-foreground">
-                  Password must be at least 8 characters and include uppercase, numbers, and special characters
+                  Password must be at least 8 characters and include uppercase,
+                  numbers, and special characters
                 </p>
               </div>
 
@@ -189,7 +221,12 @@ export function AccountSettingsForm() {
             </form>
           </CardContent>
           <CardFooter className="flex justify-end">
-            <Button type="submit" form="password-form" className="bg-red-600 hover:bg-red-700" disabled={isLoading}>
+            <Button
+              type="submit"
+              form="password-form"
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating
@@ -208,10 +245,16 @@ export function AccountSettingsForm() {
         <Card>
           <CardHeader>
             <CardTitle>Email Preferences</CardTitle>
-            <CardDescription>Manage your email notification preferences</CardDescription>
+            <CardDescription>
+              Manage your email notification preferences
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form id="preferences-form" onSubmit={handleSubmit} className="space-y-4">
+            <form
+              id="preferences-form"
+              onSubmit={handleSubmit}
+              className="space-y-4"
+            >
               {success && (
                 <Alert className="bg-green-50 text-green-600">
                   <AlertDescription>{success}</AlertDescription>
@@ -225,8 +268,15 @@ export function AccountSettingsForm() {
 
               <div className="space-y-4">
                 <div className="flex items-start space-x-2">
-                  <Checkbox id="order-updates" defaultChecked className="mt-1" />
-                  <Label htmlFor="order-updates" className="text-sm font-normal">
+                  <Checkbox
+                    id="order-updates"
+                    defaultChecked
+                    className="mt-1"
+                  />
+                  <Label
+                    htmlFor="order-updates"
+                    className="text-sm font-normal"
+                  >
                     Order updates and shipping notifications
                   </Label>
                 </div>
@@ -272,7 +322,10 @@ export function AccountSettingsForm() {
                       name="frequency"
                       className="h-4 w-4 border-gray-300 text-red-600 focus:ring-red-600"
                     />
-                    <Label htmlFor="frequency-weekly" className="text-sm font-normal">
+                    <Label
+                      htmlFor="frequency-weekly"
+                      className="text-sm font-normal"
+                    >
                       Weekly
                     </Label>
                   </div>
@@ -284,7 +337,10 @@ export function AccountSettingsForm() {
                       className="h-4 w-4 border-gray-300 text-red-600 focus:ring-red-600"
                       defaultChecked
                     />
-                    <Label htmlFor="frequency-biweekly" className="text-sm font-normal">
+                    <Label
+                      htmlFor="frequency-biweekly"
+                      className="text-sm font-normal"
+                    >
                       Bi-weekly
                     </Label>
                   </div>
@@ -295,7 +351,10 @@ export function AccountSettingsForm() {
                       name="frequency"
                       className="h-4 w-4 border-gray-300 text-red-600 focus:ring-red-600"
                     />
-                    <Label htmlFor="frequency-monthly" className="text-sm font-normal">
+                    <Label
+                      htmlFor="frequency-monthly"
+                      className="text-sm font-normal"
+                    >
                       Monthly
                     </Label>
                   </div>
@@ -304,7 +363,12 @@ export function AccountSettingsForm() {
             </form>
           </CardContent>
           <CardFooter className="flex justify-end">
-            <Button type="submit" form="preferences-form" className="bg-red-600 hover:bg-red-700" disabled={isLoading}>
+            <Button
+              type="submit"
+              form="preferences-form"
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving
@@ -324,21 +388,28 @@ export function AccountSettingsForm() {
           <CardHeader>
             <CardTitle>Delete Account</CardTitle>
             <CardDescription>
-              Permanently delete your account and all associated data. This action cannot be undone.
+              Permanently delete your account and all associated data. This
+              action cannot be undone.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert variant="destructive" className="bg-red-50 text-red-600">
               <AlertDescription>
-                Warning: Deleting your account will remove all your personal information, order history, saved vehicles,
-                and other data from our system. This action is permanent and cannot be reversed.
+                Warning: Deleting your account will remove all your personal
+                information, order history, saved vehicles, and other data from
+                our system. This action is permanent and cannot be reversed.
               </AlertDescription>
             </Alert>
 
             <div className="rounded-md border border-red-200 bg-red-50 p-4">
-              <h3 className="font-medium text-red-800">Before you delete your account:</h3>
+              <h3 className="font-medium text-red-800">
+                Before you delete your account:
+              </h3>
               <ul className="mt-2 list-inside list-disc text-sm text-red-700">
-                <li>Download any order invoices or receipts you may need for your records</li>
+                <li>
+                  Download any order invoices or receipts you may need for your
+                  records
+                </li>
                 <li>Complete any pending orders or returns</li>
                 <li>Save any vehicle information you want to keep</li>
               </ul>
@@ -347,7 +418,8 @@ export function AccountSettingsForm() {
             <div className="flex items-start space-x-2">
               <Checkbox id="confirm-delete" className="mt-1" />
               <Label htmlFor="confirm-delete" className="text-sm font-normal">
-                I understand that deleting my account is permanent and cannot be undone
+                I understand that deleting my account is permanent and cannot be
+                undone
               </Label>
             </div>
           </CardContent>
@@ -357,5 +429,5 @@ export function AccountSettingsForm() {
         </Card>
       </TabsContent>
     </Tabs>
-  )
+  );
 }
