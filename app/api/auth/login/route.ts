@@ -26,7 +26,16 @@ export async function POST(req: Request) {
 
     const { email, password } = parse.data;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        adminProfile: {
+          select: {
+            hasUpdatedCredentials: true,
+          },
+        },
+      },
+    });
     if (!user) {
       return NextResponse.json(
         { error: "Invalid credentials" },
@@ -47,7 +56,11 @@ export async function POST(req: Request) {
       id: user.id,
       role: user.role,
       email: user.email, // include email to reduce db calls
-      hasUpdatedCredentials: user.hasUpdatedCredentials // add flag for middlware handling on onboarding redirection
+      // Include admin profile info if user is admin
+      ...(user.role === "ADMIN" &&
+        user.adminProfile && {
+          hasUpdatedCredentials: user.adminProfile.hasUpdatedCredentials,
+        }), // add flag for middlware handling on onboarding redirection
     });
 
     const sessionId = randomUUID(); // or nanoid()
@@ -56,26 +69,29 @@ export async function POST(req: Request) {
       id: user.id,
       role: user.role,
       email: user.email,
-      hasUpdatedCredentials: user.hasUpdatedCredentials,
+      ...(user.role === "ADMIN" &&
+        user.adminProfile && {
+          hasUpdatedCredentials: user.adminProfile.hasUpdatedCredentials,
+        }), // add flag for middlware handling on onboarding redirection
       sessionId, // 👈 included in JWT payload for multiple session
     });
 
     // Set refresh token and user id in redis, ensure this is checked later, how keys are stored for cart, orders etc, whether to use differnt db
-    // try {
-    //   const redis = await getRedisClient();
-    //   await redis.set(
-    //     `auto_parts_ecommerce:session:${sessionId}`,
-    //     refreshToken,
-    //     {
-    //       EX: REFRESH_TOKEN_MAX_AGE,
-    //     }
-    //   ); // 7 days
-    // } catch (redisError) {
-    //   return handleRedisError(redisError, "login handler", {
-    //     status: 503,
-    //     message: "Unable to create session. Please try again later.",
-    //   });
-    // }
+    try {
+      const redis = await getRedisClient();
+      await redis.set(
+        `auto_parts_ecommerce:session:${sessionId}`,
+        refreshToken,
+        {
+          EX: REFRESH_TOKEN_MAX_AGE,
+        }
+      ); // 7 days
+    } catch (redisError) {
+      return handleRedisError(redisError, "login handler", {
+        status: 503,
+        message: "Unable to create session. Please try again later.",
+      });
+    }
 
     //Set cookies
     const accessCookie = serialize("access_token", accessToken, {

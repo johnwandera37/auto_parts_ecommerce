@@ -24,17 +24,20 @@ import { usePasswordField } from "@/hooks/usePasswordField";
 import { useAuth } from "@/context/AuthContext";
 import { setAccessToken } from "@/utils/tokenStore";
 
+// Initial form state
+const initialFormData = {
+  email: "",
+  password: "",
+  rememberMe: false,
+};
+
 export function LoginForm() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    rememberMe: false,
-  });
+  const [formData, setFormData] = useState(initialFormData);
   const { showPassword, PasswordToggle } = usePasswordField();
   const [isLoading, setIsLoading] = useState(false);
   const { setError, setSuccess, AlertUI } = useAlert();
   const router = useRouter();
-  const { setUser, SetIsLoggedIn } = useAuth();
+  const { setUser } = useAuth();
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -54,6 +57,11 @@ export function LoginForm() {
     value: string | boolean
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Function to clear the form
+  const clearForm = () => {
+    setFormData(initialFormData);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,8 +94,12 @@ export function LoginForm() {
       }
 
       // 3. 🔥 Store user and and update logged in state in context
-      SetIsLoggedIn(true);
       setUser(loginResponse.user);
+      // Trigger storage event to sync across tabs
+      window.localStorage.setItem("auth_event", "login_" + Date.now());
+
+      // 4. ✅ CLEAR THE FORM ON SUCCESS
+      clearForm();
 
       // 2. If success, redirect to dashboard / update default profile
       if (loginResponse?.user) {
@@ -104,9 +116,9 @@ export function LoginForm() {
           });
 
           // Redirect to admin profile update page
-          setTimeout(() => {
-            router.push(pages.onbording);
-          }, 2000);
+          // setTimeout(() => {
+          router.push(pages.onbording);
+          // }, 2000);
         } else {
           // Normal login flow
           setSuccess(loginResponse.message || "Login successful!");

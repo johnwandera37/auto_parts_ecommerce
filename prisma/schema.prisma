@@ -1,4 +1,3 @@
-
 // I reached the folllowing part, enforce at the schema level that a user can have only one ACTIVE cart at a time, or leave that rule to your business logic
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
@@ -16,8 +15,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
 enum Role {
   USER
   ADMIN
@@ -33,28 +30,26 @@ enum CartStatus {
 // USER / ACCOUNT RELATED MODELS
 // =================================
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  firstName      String
-  lastName      String
-  role      Role     @default(USER)
-  hasUpdatedCredentials Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  email            String   @unique
+  password         String
+  firstName        String
+  lastName         String
+  role             Role     @default(USER)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
   // ✅ Consent / Legal
-  acceptedTerms    Boolean @default(false) // must be true to register
-  marketingConsent Boolean @default(false) // opt-in for promos, must be in sync with email provider
+  acceptedTerms    Boolean  @default(false) // must be true to register
+  marketingConsent Boolean  @default(false) // opt-in for promos, must be in sync with email provider
 
-     // ✅ Social login
-  googleId    String?  @unique
-  googleEmail String?  @unique
-
+  // ✅ Social login
+  googleId    String? @unique
+  googleEmail String? @unique
 
   // Relations
-  orders       Order[]
-  wishlist     Wishlist[]
-  vehicles     Vehicle[]
+  orders   Order[]
+  wishlist Wishlist[]
+  vehicles Vehicle[]
 
   // User can have zero or one of the following
   cart         Cart?
@@ -74,23 +69,29 @@ model UserSettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Verification {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  token     String   @unique
-  expiresAt DateTime
-  verified  Boolean  @default(false)
+model Verification {year
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  otp           String
+  attempts      Int      @default(0) // Track failed attempts
+  emailVerified Boolean  @default(false)
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Add index for faster OTP lookups instead of unique constraint
+  @@index([otp])
 }
 
 // Admins get extra profile info
 model AdminProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-  level  Int    @default(100) // convention: 100=Super Admin, 50=Admin, 20=Manager, 10=Editor, 1=Support
+  id                    String  @id @default(cuid())
+  userId                String  @unique
+  hasUpdatedCredentials Boolean @default(false)
+  level                 Int     @default(100) // convention: 100=Super Admin, 50=Admin, 20=Manager, 10=Editor, 1=Support
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // =================================

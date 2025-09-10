@@ -39,7 +39,8 @@ export async function PATCH(req: Request) {
     }
 
     // Now we have received data from the body
-    const { firstName, lastName, email, currentPassword, newPassword  } = parsed.data;
+    const { firstName, lastName, email, currentPassword, newPassword } =
+      parsed.data;
 
     // 2. Get default admin(This will proceed with the current admin trying to do this operation)
     const superAdmin = await prisma.user.findUnique({
@@ -59,7 +60,10 @@ export async function PATCH(req: Request) {
     }
 
     // 3. Ensure admin proceeds with their unique email, not the default one  // 403 - Security Policy Violations
-    if (email === superAdmin.email && superAdmin.email === "admin@example.com") {
+    if (
+      email === superAdmin.email &&
+      superAdmin.email === "admin@example.com"
+    ) {
       return NextResponse.json(
         { error: "Must change default admin email" },
         { status: 403 }
@@ -109,7 +113,12 @@ export async function PATCH(req: Request) {
         lastName,
         email,
         password: hashedPassword,
-        hasUpdatedCredentials: true, // This needs to be updated
+        // Update the adminProfile instead
+        adminProfile: {
+          update: {
+            hasUpdatedCredentials: true,
+          },
+        },
       },
     });
 
@@ -121,7 +130,7 @@ export async function PATCH(req: Request) {
       const payload = verifyRefreshToken(result.refreshToken) as {
         sessionId: string;
       };
-      
+
       //delete the refresh token that is in redis
       const redis = await getRedisClient();
       await redis.del(`auto_parts_ecommerce:session:${payload.sessionId}`);
@@ -136,8 +145,8 @@ export async function PATCH(req: Request) {
         cookiesToClear: ["access_token", "refresh_token"],
       });
     } catch (error) {
-      errLog("Cleanup error | Redis: ", getErrorMessage(error))
-        // Still proceed with credential update but warn about active sessions
+      errLog("Cleanup error | Redis: ", getErrorMessage(error));
+      // Still proceed with credential update but warn about active sessions
       return apiResponse({
         status: 200,
         message: "Credentials updated. Some sessions may remain active.",

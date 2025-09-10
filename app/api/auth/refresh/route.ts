@@ -25,14 +25,14 @@ export async function POST(req: Request) {
 
     try {
       // Attempt to get Redis client
-      // const redis = await getRedisClient();
-      // const redisKey = `auto_parts_ecommerce:session:${payload.sessionId}`;
-      // const storedRefreshToken = await redis.get(redisKey);
+      const redis = await getRedisClient();
+      const redisKey = `auto_parts_ecommerce:session:${payload.sessionId}`;
+      const storedRefreshToken = await redis.get(redisKey);
 
-      // if (!storedRefreshToken || storedRefreshToken !== result.refreshToken) {
-      //   log("❌ Session expired or invalid refresh token");
-      //   return NextResponse.json({ error: "Session expired" }, { status: 403 });
-      // }
+      if (!storedRefreshToken || storedRefreshToken !== result.refreshToken) {
+        log("❌ Session expired or invalid refresh token");
+        return NextResponse.json({ error: "Session expired" }, { status: 403 });
+      }
 
       // Create new access token
       const newAccessToken = signToken({ id: payload.id, role: payload.role, email: payload.email });

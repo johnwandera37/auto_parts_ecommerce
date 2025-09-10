@@ -4,7 +4,7 @@ import { verifyAccessToken } from "./jwt";
 import { getErrorMessage } from "@/utils/errMsg";
 import { NextResponse } from "next/server";
 
-export async function getUserFromToken(req: Request): Promise<{ id: string; role: string } | NextResponse> {
+export async function getUserFromToken(req: Request): Promise<{ id: string; role: string; email: string } | NextResponse> {
   const authHeader = req.headers.get("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -15,7 +15,7 @@ export async function getUserFromToken(req: Request): Promise<{ id: string; role
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = verifyAccessToken(token) as { id: string; role: string; email: string; hasUpdatedCredentials: string; };
+    const decoded = verifyAccessToken(token) as { id: string; role: string; email: string;};
     return decoded;
   } catch (err) {
     errLog("Invalid token:", getErrorMessage(err));

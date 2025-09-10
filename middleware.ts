@@ -36,26 +36,51 @@ export async function middleware(req: NextRequest) {
   log("🚀 access_token available: ", !!accessToken?.value);
   log("refresh_token available: ", !!refreshToken);
 
-  // --- AUTHENTICATION CHECK ---
-  const isProtectedRoute =
+  const isProtectedRoutes =
     pathname.startsWith("/admin") || pathname.startsWith("/account");
   const publicAccountRoutes = ["/account/login", "/account/register"];
-  const isPublicAccount = publicAccountRoutes.some((route) =>
+  const isPublicRoutes = publicAccountRoutes.some((route) =>
     pathname.startsWith(route)
   );
 
-  // 1. Public routes always allowed
-  if (isPublicAccount) {
+  // 1. ✅ PUBLIC ROUTES - Handle them first and exit early
+  if (isPublicRoutes) {
+    log("🔥 Public route detected:", pathname);
+
+    // If user has tokens and tries to access public routes, redirect to appropriate dashboard
+    if (accessToken || refreshToken) {
+      try {
+        // Verify the token to get user role
+        const authResult = await verifyCookieAuth(req);
+        if (authResult?.valid) {
+          const dashboardPath =
+            authResult.user?.role === "ADMIN" ? "/admin" : "/account/dashboard";
+          log(
+            "🚫 Redirecting logged-in user from public route to:",
+            dashboardPath
+          );
+          return NextResponse.redirect(new URL(dashboardPath, req.url));
+        }
+      } catch (error) {
+        // If token verification fails, let them access the public route
+        log("Token verification failed, allowing access to public route");
+        return NextResponse.next();
+      }
+    }
+
+    // No tokens or invalid tokens - allow access to public routes
+    log("Allowing access to public route");
     return NextResponse.next();
   }
 
   // 2. No tokens at all + protected route = not logged in
-  if (!accessToken && !refreshToken && isProtectedRoute) {
+  if (!accessToken && !refreshToken && isProtectedRoutes) {
+    log("❌ No tokens, redirecting to login");
     return NextResponse.redirect(new URL("/account/login", req.url));
   }
 
-  // --- ATTEMPT TOKEN REFRESH IF ACCESS TOKEN EXPIRED BUT REFRESH EXISTS ---
-  if (!accessToken && refreshToken && !isPublicAccount) {
+  // --- ATTEMPT TOKEN REFRESH IF ACCESS TOKEN EXPIRED BUT REFRESH EXISTS AND NOT ON PUBLIC PAGE ROUTES---
+  if (!accessToken && refreshToken && !isPublicRoutes) {
     log("🚀 Starting refresh in middleware");
     // ✅ Check if axios already detected session expiry(Avoid race conditions with axios)
     const axiosRefreshFailed = req.cookies.get("axios_refresh_failed")?.value;
@@ -163,7 +188,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Verify authentication for all protected routes
+  // VERIFY AUTH FOR ALL PROTECTED ROUTES CURRENTLY (IT WILL ALSO RUN ON PUBLIC ROUTES /account/login or /account/register)
   let authResult = null;
   if (
     accessToken &&
@@ -204,6 +229,7 @@ export async function middleware(req: NextRequest) {
 
   // --- ADMIN ROUTES PROTECTION (excluding onboarding) ---
   if (pathname.startsWith("/admin") && pathname !== "/admin/onboarding") {
+    log("🚀 Executing Admin protection");
     // 🚫 Not logged in → login
     if (!authResult?.valid) {
       // ✅ Check for specific token expiration errors
@@ -216,8 +242,13 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/account/login", req.url));
     }
 
-    // ✅ Logged in, check if default admin
+    // ✅ Logged in
     const { user } = authResult;
+
+    // 🚫 Users trying to access admin routes → redirect to their respective dashboards
+    if (user?.role === "USER") {
+      return NextResponse.redirect(new URL("/account/dashboard", req.url));
+    }
 
     // 🚫 Non-admins trying to access admin routes → redirect home
     if (user?.role !== "ADMIN") {
@@ -235,43 +266,40 @@ export async function middleware(req: NextRequest) {
 
   // --- USER ACCOUNT ROUTES PROTECTION ---
   if (pathname.startsWith("/account")) {
-    const publicAccountRoutes = ["/account/login", "/account/register"];
-    const isPublic = publicAccountRoutes.some((route) =>
-      pathname.startsWith(route)
-    );
-
-    if (isPublic) {
-      // 🚫 Logged-in users AND admins can't visit login/register
-      if (authResult?.valid) {
-        // Redirect to appropriate dashboard based on role
-        const dashboardPath =
-          authResult.user?.role === "ADMIN" ? "/admin" : "/account/dashboard";
-
-        return NextResponse.redirect(new URL(dashboardPath, req.url));
+    log("🚀 Executing User protection");
+    // Public routes are already handled at the top, so this must be a protected route
+    // 🔒 Protect account routes (dashboard, orders, settings, etc
+    if (!authResult?.valid) {
+      log("Protecting account routes...");
+      // ✅ Check for specific token expiration errors
+      if (authResult?.error === "Token expired") {
+        log("❌ No valid auth for protected account route");
+        return NextResponse.redirect(
+          new URL("/account/login?session=expired", req.url)
+        );
       }
-    } else {
-      // 🔒 Protected account routes (dashboard, orders, settings, et
-      if (!authResult?.valid) {
-        // ✅ Check for specific token expiration errors
-        if (authResult?.error === "Token expired") {
-          return NextResponse.redirect(
-            new URL("/account/login?session=expired", req.url)
-          );
-        }
-        // Other auth errors (invalid token, no token, etc.)
-        return NextResponse.redirect(new URL("/account/login", req.url));
-      }
-
-      // 🚫 Admins trying to access user account routes → redirect to admin dashboard
-      if (authResult.user?.role === "ADMIN") {
-        return NextResponse.redirect(new URL("/admin", req.url));
-      }
-
-      // 🚫 Non-users trying to access user account routes → redirect home
-      if (authResult.user?.role !== "USER") {
-        return NextResponse.redirect(new URL("/", req.url));
-      }
+      // Other auth errors (invalid token, no token, etc.)
+      return NextResponse.redirect(new URL("/account/login", req.url));
     }
+
+    // 🚫 Admins trying to access user account routes → redirect to admin dashboard
+    if (authResult.user?.role === "ADMIN") {
+      log(
+        "🔥 Redirecting to your admin dashboard: ",
+        `User ${authResult.user?.email} with Role ${authResult.user?.role}`
+      );
+      return NextResponse.redirect(new URL("/admin", req.url));
+    }
+
+    // 🚫 Non-users trying to access user account routes → redirect home
+    if (authResult.user?.role !== "USER") {
+      log("🔥 Redirecting none users to home...");
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+
+    // ✅ Users can access user account routes
+    log("✅ User authorized to access account route");
+    return NextResponse.next();
   }
 
   // --- VERIFICATION PAGE (special case for both admin and user) ---

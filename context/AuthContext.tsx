@@ -21,7 +21,6 @@ type AuthContextType = {
   isLoggingOut: boolean;
   setIsLoggingOut: React.Dispatch<React.SetStateAction<boolean>>;
   isLoggedIn: boolean;
-  SetIsLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
   setUser: (user: User) => void;
   isLoading: boolean;
   userError: any;
@@ -51,7 +50,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     null | "service-unavailable" | "unauthorized" | "network" | "other"
   >(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false); //global state for the logout
-  const [isLoggedIn, SetIsLoggedIn] = useState(false); //global state for the log in state
 
   // 👇 derived flag (recomputed whenever `user` changes)
   const isDefaultAdmin = !!(
@@ -60,6 +58,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user.role === "ADMIN"
   );
 
+  // Set is logged in based on user, depending on getMe route
+  const isLoggedIn = !!user;
+
+  // Fetch user from backend fn
   const fetchUser = async () => {
     try {
       // The get me endpoint runs with the help of the axios interceptor such that it will be able to refresh access token if it has expired
@@ -101,11 +103,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const res = await api.post(endpoints.logout);
       setUser(null);
-       toast({
+      // Trigger storage event to sync across tabs
+      window.localStorage.setItem("auth_event", "logout_" + Date.now());
+      toast({
         title: "Success",
         description: res?.data?.message ?? "Logout successful!",
       });
-     router.push(pages.login);
+      router.push(pages.login);
     } catch (err) {
       const errMsg = getErrorMessage(err);
       errLog("Logout failed:", errMsg);
@@ -121,6 +125,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Handle refresh errors from middleware
   const checkAllRefreshErrors = () => {
+    log("Check error function", document.cookie);
     // Check for middleware refresh errors
     const middlewareRefreshFailed = document.cookie.includes(
       "refresh_attempt_failed=true"
@@ -190,8 +195,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         case "NOT_FOUND":
           // Session expiry - middleware will handle redirect, just show toast
           toast({
-            title: "Session Expired",
-            description: "Your session has expired. Please log in again.",
+            title: "Session Invalid or Expired",
+            description: "Invalid or expired session. Please log in.",
             variant: "destructive",
           });
           break;
@@ -208,23 +213,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const pathname = window.location.pathname;
-    const publicRoutes = [pages.home, pages.register, pages.login];
-
-    if (publicRoutes.includes(pathname)) {
-      setIsLoading(false); // Skip fetching user, since it's a public route
-      return;
-    }
-
+    // const pathname = window.location.pathname;
+    // const publicRoutes = [pages.home, pages.register, pages.login];
     // Only fetch user if not on public route
+    // if (publicRoutes.includes(pathname)) {
+    //   setIsLoading(false); // Skip fetching user, since it's a public route
+    //   return;
+    // }
+
+    // 1. Always fetch user on every page and on mount
     fetchUser();
 
-    // Check for errors on initial load
+    // 2. Check for errors on initial load
     checkAllRefreshErrors();
-    // / Also check periodically for a few seconds (in case cookies are set after initial render)
-    const interval = setInterval(checkAllRefreshErrors, 1000);
-    setTimeout(() => clearInterval(interval), 5000);
-  }, []);
+
+    // 3. Check periodically for a few seconds (in case cookies are set after initial render)
+    //Cookies have 5 seconds before they expire
+    const errorInterval = setInterval(checkAllRefreshErrors, 1000);
+    setTimeout(() => clearInterval(errorInterval), 5000);
+
+    
+    // 4. Listen for storage events (cross-tab sync)
+    const handleStorageChange = (e: StorageEvent) => {
+      log("Storage event:", e.key, e.newValue, e.oldValue);
+      if (e.key === "auth_event") {
+        log("Auth event detected:", e.newValue);
+        if (e.newValue?.startsWith("login_")) {
+          fetchUser(); // User logged in another tab
+        } else if (e.newValue?.startsWith("logout_")) {
+          setUser(null); // Immediate logout UI update
+          setUserError("unauthorized");
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+      // 5. Cleanup old auth events (optional)
+    const cleanupInterval = setInterval(() => {
+      const hourAgo = Date.now() - 60 * 60 * 1000;
+      const authEvent = localStorage.getItem("auth_event");
+      if (authEvent) {
+        const timestamp = parseInt(authEvent.split('_')[1]);
+        if (timestamp && timestamp < hourAgo) {
+          localStorage.removeItem("auth_event");
+        }
+      }
+    }, 300000); // Every 5 minutes
+
+     // Cleanup function
+    return () => {
+      clearInterval(errorInterval);
+      clearInterval(cleanupInterval);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+
+  }, []); // Empty dependency array - runs once on mount
 
   return (
     <AuthContext.Provider
@@ -235,7 +279,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isLoggingOut,
         setIsLoggingOut,
         isLoggedIn,
-        SetIsLoggedIn,
         isLoading,
         userError,
         setUserError,

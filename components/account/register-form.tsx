@@ -19,19 +19,24 @@ import { toast } from "@/hooks/use-toast";
 import Loader from "../ui/loader";
 import { usePasswordField } from "@/hooks/usePasswordField";
 
+// Initial form state
+const initialFormData = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  acceptedTerms: false,
+  marketingConsent: false,
+};
+
 export function RegisterForm() {
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    acceptedTerms: false,
-    marketingConsent: false,
-  });
+  const [formData, setFormData] = useState(initialFormData);
   const { showPassword, PasswordToggle } = usePasswordField();
-  const { showPassword: showConfirmPassword, PasswordToggle: ConfirmPasswordToggle } =
-    usePasswordField();
+  const {
+    showPassword: showConfirmPassword,
+    PasswordToggle: ConfirmPasswordToggle,
+  } = usePasswordField();
   const [loading, setLoading] = useState(false);
   const { setError, setSuccess, AlertUI } = useAlert();
   const router = useRouter();
@@ -61,6 +66,11 @@ export function RegisterForm() {
     return Math.min(strength, 4); // Cap at 4 for the visual indicator
   };
 
+  // Function to clear the form
+  const clearForm = () => {
+    setFormData(initialFormData);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -87,6 +97,9 @@ export function RegisterForm() {
         title: res.message || "Account created successfully!",
         description: "Redirecting to login",
       });
+
+      // ✅ CLEAR THE FORM ON SUCCESS
+      clearForm();
 
       setTimeout(() => {
         router.push(pages.login);

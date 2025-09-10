@@ -16,18 +16,18 @@ export async function POST(req: Request) {
     };
 
     // Delete the refresh token from Redis
-    // try {
-    //   //delete the refresh token that is in redis
-    //   const redis = await getRedisClient();
-    //   await redis.del(`auto_parts_ecommerce:session:${payload.sessionId}`);
-    // } catch (redisError) {
-    //   errLog(
-    //     "❌ Logout cleanup: failed to delete session from Redis",
-    //     getErrorMessage(redisError)
-    //   );
+    try {
+      //delete the refresh token that is in redis
+      const redis = await getRedisClient();
+      await redis.del(`auto_parts_ecommerce:session:${payload.sessionId}`);
+    } catch (redisError) {
+      errLog(
+        "❌ Logout cleanup: failed to delete session from Redis",
+        getErrorMessage(redisError)
+      );
 
-    //   // Continue with logout even if Redis fails, but log the error
-    // }
+      // Continue with logout even if Redis fails, but log the error
+    }
 
     // Return the response and clear cookies
     return apiResponse({

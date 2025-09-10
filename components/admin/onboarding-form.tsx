@@ -18,33 +18,41 @@ import { updateProfileSchema } from "@/lib/zodSchema";
 import { log } from "@/utils/logger";
 import api from "@/lib/axios";
 
-export function OnboardingForm() {
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    currentPassword: "",
-    newPassword: "",
-    confirmNewPassword: "",
-  });
-// independent states for each password field
-const { showPassword: showCurrentPassword, PasswordToggle: CurrentPasswordToggle } =
-  usePasswordField();
-const { showPassword: showNewPassword, PasswordToggle: NewPasswordToggle } =
-  usePasswordField();
-const { showPassword: showConfirmPassword, PasswordToggle: ConfirmPasswordToggle } =
-  usePasswordField();
+// Initial form state
+const initialFormData = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  currentPassword: "",
+  newPassword: "",
+  confirmNewPassword: "",
+};
 
+export function OnboardingForm() {
+  const [formData, setFormData] = useState(initialFormData);
+  // independent states for each password field
+  const {
+    showPassword: showCurrentPassword,
+    PasswordToggle: CurrentPasswordToggle,
+  } = usePasswordField();
+  const { showPassword: showNewPassword, PasswordToggle: NewPasswordToggle } =
+    usePasswordField();
+  const {
+    showPassword: showConfirmPassword,
+    PasswordToggle: ConfirmPasswordToggle,
+  } = usePasswordField();
 
   const [isLoading, setIsLoading] = useState(false);
   const { setError, setSuccess, AlertUI } = useAlert();
   const router = useRouter();
 
-  const handleChange = (
-    field: keyof typeof formData,
-    value: string
-  ) => {
+  const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Function to clear the form
+  const clearForm = () => {
+    setFormData(initialFormData);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,11 +64,11 @@ const { showPassword: showConfirmPassword, PasswordToggle: ConfirmPasswordToggle
       // ✅ Validate with zod
       const parsed = updateProfileSchema.parse(formData);
 
-     // 🔥 Use api instance instead of fetcher
-    const { data } = await api.patch<{ message: string }>(
-      endpoints.updateProfile,
-      parsed
-    );
+      // 🔥 Use api instance instead of fetcher
+      const { data } = await api.patch<{ message: string }>(
+        endpoints.updateProfile,
+        parsed
+      );
 
       setSuccess(data.message || "Profile updated successfully!");
       toast({
@@ -68,8 +76,11 @@ const { showPassword: showConfirmPassword, PasswordToggle: ConfirmPasswordToggle
         description: data.message,
       });
 
+      // ✅ CLEAR THE FORM ON SUCCESS
+      clearForm();
+
       // setTimeout(() => {
-        router.push(pages.login);
+      router.push(pages.login);
       // }, 2000);
     } catch (err: any) {
       handleFormError(err, setError, toast);

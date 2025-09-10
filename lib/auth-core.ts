@@ -11,7 +11,7 @@ export async function verifyRequestAuth(
   roles: string[] = []
 ): Promise<{
   valid: boolean;
-  user?: { id: string; role: string; email: string;  hasUpdatedCredentials: string; };
+  user?: { id: string; role: string; email: string; };
   error?: string;
 }> {
   const authHeader = req.headers.get("Authorization");
@@ -26,7 +26,6 @@ export async function verifyRequestAuth(
       id: string;
       role: string;
       email: string;
-      hasUpdatedCredentials: string;
     };
 
     if (roles.length && !roles.includes(decoded.role)) {
@@ -56,14 +55,14 @@ export async function verifyCookieAuth(
   try {
     log("🔐 Attempting to verify token...");
 
-    const decoded = (await edgeCaseVerifyAccessToken(token)) as {
-      id: string;
-      role: string;
-      email: string;
-      hasUpdatedCredentials: string; 
-    };
+    const decoded = (await edgeCaseVerifyAccessToken(token)) as any
 
     log("🔐 Decoded token:", !!decoded);
+
+     // Check if we have the basic required fields
+    if (!decoded?.id || !decoded?.role || !decoded?.email) {
+      return { valid: false, error: "Invalid token structure" };
+    }
 
     if (requiredRoles && requiredRoles.length > 0) {
       if (!requiredRoles.includes(decoded.role)) {
@@ -71,7 +70,19 @@ export async function verifyCookieAuth(
       }
     }
 
-    return { valid: true, user: decoded };
+    // Return the user object with the fields we care about
+    return { 
+      valid: true, 
+      user: {
+        id: decoded.id,
+        role: decoded.role,
+        email: decoded.email,
+        // Only include hasUpdatedCredentials if it exists (for admins)
+        ...(decoded.hasUpdatedCredentials !== undefined && {
+          hasUpdatedCredentials: decoded.hasUpdatedCredentials
+        })
+      }
+    };
   } catch (error: any) {
     errLog("🔐 Token verification error:", error);
     // Return the specific error message from edgeCaseVerifyAccessToken

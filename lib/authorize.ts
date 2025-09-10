@@ -1,7 +1,6 @@
 // lib/authorize.ts
 import { stringConstants } from "@/config/constants";
 import { verifyRequestAuth } from "@/lib/auth-core";
-import { getUserById } from "@/utils/getUserById";
 import { NextResponse } from "next/server";
 
 export function authorize(roles: string[] = []) {
