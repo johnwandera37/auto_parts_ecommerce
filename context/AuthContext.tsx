@@ -110,9 +110,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: res?.data?.message ?? "Logout successful!",
       });
       router.push(pages.login);
-    } catch (err) {
-      const errMsg = getErrorMessage(err);
-      errLog("Logout failed:", errMsg);
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.error
+      errLog("Logout failed:", err);
       toast({
         title: "Error",
         description: errMsg ?? "Logout Failed!",
@@ -125,7 +125,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Handle refresh errors from middleware
   const checkAllRefreshErrors = () => {
-    log("Check error function", document.cookie);
     // Check for middleware refresh errors
     const middlewareRefreshFailed = document.cookie.includes(
       "refresh_attempt_failed=true"

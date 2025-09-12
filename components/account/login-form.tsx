@@ -79,6 +79,7 @@ export function LoginForm() {
         message: string;
         user: User;
         requiresProfileUpdate?: boolean;
+        requiresEmailVerification?: boolean;
       }>(endpoints.login, {
         method: "POST",
         body: parsed,
@@ -103,9 +104,9 @@ export function LoginForm() {
 
       // 2. If success, redirect to dashboard / update default profile
       if (loginResponse?.user) {
-        // Check if login is with default credentials
+        // Case 1: Default admin needs profile update
         if (loginResponse.requiresProfileUpdate) {
-          // Special case: force update
+          // Special case: default admin force update
           setError(
             "You are using default credentials. Please update your profile."
           );
@@ -119,7 +120,21 @@ export function LoginForm() {
           // setTimeout(() => {
           router.push(pages.onbording);
           // }, 2000);
-        } else {
+        }
+
+        // Case 2: Email needs verification
+        else if (loginResponse.requiresEmailVerification) {
+          setSuccess("Login successful! Please verify your email.");
+          toast({
+            title: "Email Verification Required",
+            description: "Please check your email for verification code.",
+          });
+          router.push(
+            `${pages.verification}?email=${loginResponse.user.email}&userId=${loginResponse.user.id}`
+          );
+        }
+        // Case 3: Normal login - everything is good
+        else {
           // Normal login flow
           setSuccess(loginResponse.message || "Login successful!");
           toast({

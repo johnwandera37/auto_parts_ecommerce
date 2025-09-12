@@ -100,7 +100,18 @@ export const updateProfileSchema = z
     message: "Passwords do not match",
   })
   .openapi("AdminProfileUpdate");
-  
+
+// Verify email
+export const verifyEmailSchema = z.object({
+  userId: z.cuid("Valid user ID is required"),
+  otp: z.string().length(6).regex(/^\d+$/, "OTP must be numeric"),
+});
+
+// Resend OTP
+export const resendOtpSchema = z.object({
+  userId: z.cuid("Valid user ID is required"),
+  email: z.email("Valid email is required"),
+});
 
 //reusable department
 const departmentSchema = z.string().openapi({

@@ -10,10 +10,12 @@ import { getErrorMessage } from "@/utils/errMsg";
 import {
   ACCESS_TOKEN_MAX_AGE,
   REFRESH_TOKEN_MAX_AGE,
+  stringConstants,
 } from "@/config/constants";
 import { loginSchema } from "@/lib/zodSchema";
 import { badRequestFromZod } from "@/utils/responseUtils";
 import { handleRedisError } from "@/lib/redisErrorMapperHandler";
+import { log } from "console";
 
 export async function POST(req: Request) {
   try {
@@ -51,11 +53,15 @@ export async function POST(req: Request) {
       );
     }
 
+    log("Email verified flag in login route", user.emailVerified);
+
     //Create access token
     const accessToken = signToken({
       id: user.id,
       role: user.role,
       email: user.email, // include email to reduce db calls
+      isDefaultAdmin: user.email === stringConstants.defaultEmail, // For easy clearing default user session
+      emailVerified: user.emailVerified, //Used in middleware for redirection and route protection
       // Include admin profile info if user is admin
       ...(user.role === "ADMIN" &&
         user.adminProfile && {
@@ -64,15 +70,12 @@ export async function POST(req: Request) {
     });
 
     const sessionId = randomUUID(); // or nanoid()
-    //Create refresh token
+    //Create refresh token, n/b some fields  are unnecessary in the refresh 
+    // token hence excluded, role can change when super admin upgrades user to admin, hence in refresh token use role from db
     const refreshToken = signRefreshToken({
       id: user.id,
       role: user.role,
-      email: user.email,
-      ...(user.role === "ADMIN" &&
-        user.adminProfile && {
-          hasUpdatedCredentials: user.adminProfile.hasUpdatedCredentials,
-        }), // add flag for middlware handling on onboarding redirection
+      email: user.email, // Can be stale in the session tokens if updated but handled this when creating session, ensure updated one is used
       sessionId, // 👈 included in JWT payload for multiple session
     });
 
@@ -111,6 +114,7 @@ export async function POST(req: Request) {
     });
 
     const isDefaultAdmin = user.email === "admin@example.com";
+    const emailNotVerified = user.emailVerified === false;
     const res = new NextResponse(
       JSON.stringify({
         message: "Login successful",
@@ -120,8 +124,10 @@ export async function POST(req: Request) {
           lastName: user.lastName,
           email: user.email,
           role: user.role,
+          emailVerified: user.emailVerified,
         },
-        requiresProfileUpdate: isDefaultAdmin,
+        requiresProfileUpdate: isDefaultAdmin, // default needs update
+        requiresEmailVerification: emailNotVerified, // email not verified
       }),
       {
         status: 200,

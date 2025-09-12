@@ -1,16 +1,24 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { getUserFromToken } from "@/lib/auth"; // helper to extract user from token
 import { comparePasswords, hashPassword } from "@/lib/hash"; // assuming you have a hash utility
-import { errLog, log } from "@/utils/logger";
+import { errLog, log, warnLog } from "@/utils/logger";
 import { getErrorMessage } from "@/utils/errMsg";
 import { updateProfileSchema } from "@/lib/zodSchema";
 import { badRequestFromZod } from "@/utils/responseUtils";
 import { getRedisClient } from "@/lib/redis";
 import { apiResponse, getRefreshTokenFromRequest } from "@/lib/cookieUtils";
-import { verifyRefreshToken } from "@/lib/jwt";
+import { signRefreshToken, signToken, verifyRefreshToken } from "@/lib/jwt";
+import { randomUUID } from "crypto";
+import { handleRedisError } from "@/lib/redisErrorMapperHandler";
+import {
+  ACCESS_TOKEN_MAX_AGE,
+  REFRESH_TOKEN_MAX_AGE,
+} from "@/config/constants";
+import { createOrUpdateVerification } from "@/utils/otp";
+import { sendVerificationEmail } from "@/lib/email";
 
-export async function PATCH(req: Request) {
+export async function PATCH(req: NextRequest) {
   try {
     const userOrResponse = await getUserFromToken(req); // Extract user info from JWT / response
 
@@ -106,13 +114,14 @@ export async function PATCH(req: Request) {
 
     // 6. Update admin credentials
     const hashedPassword = await hashPassword(newPassword);
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
         firstName,
         lastName,
-        email,
+        email, // ← This is the new email
         password: hashedPassword,
+        emailVerified: false, // enforce that user needs to verify email
         // Update the adminProfile instead
         adminProfile: {
           update: {
@@ -120,43 +129,122 @@ export async function PATCH(req: Request) {
           },
         },
       },
+      include: {
+        adminProfile: true,
+      },
+    });
+
+    // ✅ 7. GENERATE OTP AND SEND VERIFICATION EMAIL
+    try {
+      const verification = await createOrUpdateVerification(updatedUser.id);
+      await sendVerificationEmail(updatedUser.email, verification.otp);
+      log("📧 Verification email sent to:", updatedUser.email);
+    } catch (emailError) {
+      // Log email error but don't fail the profile update
+      errLog("Failed to send verification email:", getErrorMessage(emailError));
+      // Continue - user can request a new OTP later from verification page
+    }
+
+    // 8. Generate NEW tokens with updated data
+    const newAccessToken = signToken({
+      id: updatedUser.id,
+      role: updatedUser.role,
+      email: updatedUser.email, // ← Updated email
+      isDefaultAdmin: updatedUser.email === "admin@example.com",
+      emailVerified: updatedUser.emailVerified, // This is false
+      ...(updatedUser.role === "ADMIN" &&
+        updatedUser.adminProfile && {
+          hasUpdatedCredentials: updatedUser.adminProfile.hasUpdatedCredentials, // ← Now true
+        }),
+    });
+
+    // Generate new refresh token with new session ID
+    const newSessionId = randomUUID();
+    const newRefreshToken = signRefreshToken({
+      id: updatedUser.id,
+      role: updatedUser.role,
+      email: updatedUser.email, // ← Updated email
+      sessionId: newSessionId,
     });
 
     try {
-      // 7. Clear redis session for the default admin
-      const result = getRefreshTokenFromRequest(req);
-      if (!result.success) return result.response;
-
-      const payload = verifyRefreshToken(result.refreshToken) as {
-        sessionId: string;
-      };
-
-      //delete the refresh token that is in redis
       const redis = await getRedisClient();
-      await redis.del(`auto_parts_ecommerce:session:${payload.sessionId}`);
 
-      // 8. Return the response
-      return apiResponse({
-        status: 200,
-        message: "Credentials updated. Please login again.",
-        data: {
-          requiresReauth: true,
-        },
-        cookiesToClear: ["access_token", "refresh_token"],
-      });
-    } catch (error) {
-      errLog("Cleanup error | Redis: ", getErrorMessage(error));
-      // Still proceed with credential update but warn about active sessions
-      return apiResponse({
-        status: 200,
-        message: "Credentials updated. Some sessions may remain active.",
-        data: { requiresReauth: true },
-        cookiesToClear: ["access_token", "refresh_token"],
+      // 9. Delete old session for the default admin from Redis (if exists)
+      const oldRefreshToken = req.cookies.get("refresh_token")?.value;
+      if (oldRefreshToken) {
+        try {
+          const oldPayload = verifyRefreshToken(oldRefreshToken) as {
+            sessionId: string;
+          };
+          await redis.del(
+            `auto_parts_ecommerce:session:${oldPayload.sessionId}`
+          );
+        } catch (redisError) {
+          warnLog("Failed to delete old Redis session:", redisError);
+          return handleRedisError(redisError, "login handler", {
+            status: 503,
+            message: "Unable to clear old session. Please try again later.",
+          });
+        }
+      }
+
+      // 10. Store new refresh token in Redis
+      await redis.set(
+        `auto_parts_ecommerce:session:${newSessionId}`,
+        newRefreshToken,
+        { EX: REFRESH_TOKEN_MAX_AGE }
+      );
+    } catch (redisError) {
+      // It's a must to have a new valid session created so we stop if something happen and handle the error
+      errLog("Cleanup error | Redis: ", getErrorMessage(redisError));
+      warnLog("Failed to delete old Redis session:", redisError);
+      return handleRedisError(redisError, "login handler", {
+        status: 503,
+        message: "Unable to create new session. Please try again later.",
       });
     }
 
-    // 9. Force client-side reauthentication
-    // Then from the front end redirect them to login again
+    // 11. Return response with new tokens
+    const response = apiResponse({
+      status: 200,
+      message: "Credentials updated successfully.",
+      data: {
+        requiresEmailVerification: true,
+        userId: user.id, // for redirection verificatio
+        email: user.email, // for redirection to verificatio
+        user: {
+          // ← Add the full user object, to update user in onboarding form
+          id: updatedUser.id,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          emailVerified: updatedUser.emailVerified,
+        },
+      },
+    });
+
+    // 12. Set new cookies
+    response.cookies.set("access_token", newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: ACCESS_TOKEN_MAX_AGE,
+      sameSite: "lax",
+    });
+
+    response.cookies.set("refresh_token", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: REFRESH_TOKEN_MAX_AGE,
+      sameSite: "lax",
+    });
+
+    return response;
+    // THE END
+    // 13. Force client-side to verify email, then redirect then directs them to respective dashboards since they have new active sesion
   } catch (err) {
     errLog("Admin credential update failed:", getErrorMessage(err));
     return NextResponse.json(

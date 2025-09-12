@@ -86,7 +86,11 @@ export function RegisterForm() {
       });
 
       setLoading(true);
-      const res = await fetcher<{ message: string }>(endpoints.register, {
+      const res = await fetcher<{
+        message: string;
+        userId: string;
+        requiresVerification: boolean; // redirection to verification
+      }>(endpoints.register, {
         method: "POST",
         body: parsed,
         credentials: "omit", // don't send cookies here
@@ -95,15 +99,18 @@ export function RegisterForm() {
       setSuccess(res.message || "Account created successfully!");
       toast({
         title: res.message || "Account created successfully!",
-        description: "Redirecting to login",
+        description: "Redirecting to verification page",
       });
 
       // ✅ CLEAR THE FORM ON SUCCESS
       clearForm();
 
-      setTimeout(() => {
-        router.push(pages.login);
-      }, 2000);
+      // setTimeout(() => {
+      // Direct to verify email page
+      router.push(
+        `${pages.verification}?userId=${res.userId}&email=${formData.email}`
+      );
+      // }, 2000);
     } catch (err: any) {
       handleFormError(err, setError, toast);
     } finally {

@@ -13,6 +13,7 @@ async function main() {
         email: "admin@example.com",
         password: await hashPassword("admin"),
         role: "ADMIN",
+        acceptedTerms: true, // Update terms for super admin, the rest will have to accept 
         adminProfile: {
           create: {
             level: 100, // Super Admin

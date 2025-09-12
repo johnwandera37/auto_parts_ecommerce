@@ -39,8 +39,9 @@ export function Header() {
   const { user, isLoggedIn, logout, isLoggingOut } = useAuth(); // Get isLoggedIn from context
   const pathname = usePathname();
   const userRoleIsUser = user?.role === "USER"; // Note this check helps to hide USER side navigation options, but logout functions and the account name applies to both
+  const emailVerified = user?.emailVerified;
 
-  log("Log in value", isLoggedIn);
+  // log("Header flags", "Is user", userRoleIsUser, "Is email verified", emailVerified, "User", user);
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -446,7 +447,7 @@ export function Header() {
                 )}
 
                 {/* Show these only when logged in for USER role */}
-                {(isLoggedIn && userRoleIsUser) && (
+                {(isLoggedIn && userRoleIsUser && emailVerified) && (
                   <>
                     <DropdownMenuItem asChild>
                       <Link

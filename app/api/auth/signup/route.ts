@@ -5,6 +5,8 @@ import { errLog } from "@/utils/logger";
 import { getErrorMessage } from "@/utils/errMsg";
 import { signupSchema } from "@/lib/zodSchema";
 import { badRequestFromZod } from "@/utils/responseUtils";
+import { createOrUpdateVerification } from "@/utils/otp";
+import { sendVerificationEmail } from "@/lib/email";
 
 //This creates user accounts, by default it has the role USER, unless changed to other levels by super admin or manager
 export async function POST(req: Request) {
@@ -65,12 +67,13 @@ export async function POST(req: Request) {
     }
 
     const hashed = await hashPassword(password);
-
-    await prisma.user.create({
+    // Create user with emailVerified: false
+    const user = await prisma.user.create({
       data: {
         firstName,
         lastName,
         email,
+        emailVerified: false, // Force false for new registrations
         password: hashed,
         role: "USER", // enforced unless changed later by admin
         acceptedTerms, // must be true to register
@@ -78,8 +81,22 @@ export async function POST(req: Request) {
       },
     });
 
+    // ✅ Generate OTP and send verification email
+    try {
+      const verification = await createOrUpdateVerification(user.id);
+      await sendVerificationEmail(email, verification.otp);
+    } catch (emailError) {
+      // Log email error but don't fail the registration
+      errLog("Failed to send verification email:", getErrorMessage(emailError));
+      // Continue - user can request a new OTP later
+    }
+
     return NextResponse.json(
-      { message: "User registered successfully" },
+      {
+        message: "Please check your email for verification.",
+        userId: user.id,
+        requiresVerification: true,
+      },
       { status: 200 }
     );
   } catch (error) {

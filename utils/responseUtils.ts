@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { treeifyError, ZodError } from "zod/v4";
 
 // bad request from zod
-export function badRequestFromZod(error: ZodError, statusVal: number = 400) {
+export function badRequestFromZod(error: ZodError, statusVal: number = 422) {
   return NextResponse.json({ error: treeifyError(error) }, { status: statusVal });
 }
 

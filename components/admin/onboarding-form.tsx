@@ -15,8 +15,9 @@ import { toast } from "@/hooks/use-toast";
 import Loader from "../ui/loader";
 import { usePasswordField } from "@/hooks/usePasswordField";
 import { updateProfileSchema } from "@/lib/zodSchema";
-import { log } from "@/utils/logger";
+import { log, warnLog } from "@/utils/logger";
 import api from "@/lib/axios";
+import { useAuth } from "@/context/AuthContext";
 
 // Initial form state
 const initialFormData = {
@@ -30,6 +31,7 @@ const initialFormData = {
 
 export function OnboardingForm() {
   const [formData, setFormData] = useState(initialFormData);
+  const { setUser } = useAuth();
   // independent states for each password field
   const {
     showPassword: showCurrentPassword,
@@ -65,10 +67,17 @@ export function OnboardingForm() {
       const parsed = updateProfileSchema.parse(formData);
 
       // 🔥 Use api instance instead of fetcher
-      const { data } = await api.patch<{ message: string }>(
-        endpoints.updateProfile,
-        parsed
-      );
+      const { data } = await api.patch<{
+        message: string;
+        data: {
+          requiresEmailVerification?: boolean;
+          userId: string;
+          email: string;
+          user: User;
+        };
+      }>(endpoints.updateProfile, parsed);
+
+      const { requiresEmailVerification, userId, email, user } = data.data;
 
       setSuccess(data.message || "Profile updated successfully!");
       toast({
@@ -79,10 +88,31 @@ export function OnboardingForm() {
       // ✅ CLEAR THE FORM ON SUCCESS
       clearForm();
 
-      // setTimeout(() => {
-      router.push(pages.login);
-      // }, 2000);
+      // Ensure user is updated with new data in the context
+      // Update AuthContext with returned data or fetch fresh
+      if (user) {
+        setUser(user); // Use returned data if available
+      } else {
+        // Fallback: fetch fresh data (though this should rarely be needed)
+        try {
+          const userResponse = await api.get(endpoints.getMe);
+          if (userResponse?.data?.user) {
+            setUser(userResponse.data.user);
+          }
+        } catch (fetchError) {
+          warnLog("Failed to fetch updated user:", fetchError);
+           // Not critical - the tokens are updated so it will work on next page load
+        }
+      }
+
+      // Then direct admin to verify email
+      if (requiresEmailVerification) {
+        // setTimeout(() => {
+        router.push(`${pages.verification}?userId=${userId}&email=${email}`);
+        // }, 2000);
+      }
     } catch (err: any) {
+      log("Error in catch in onboarding form", err);
       handleFormError(err, setError, toast);
     } finally {
       setIsLoading(false);

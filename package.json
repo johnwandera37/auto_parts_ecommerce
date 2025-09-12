@@ -8,6 +8,7 @@
     "lint": "next lint",
     "start": "next start",
     "init": "tsx scripts/init.ts",
+    "testemail": "tsx scripts/testgmail.ts",
     "install:all": "npm install prisma @prisma/client jsonwebtoken bcrypt socket.io socket.io-client redis winston zod swagger-ui-react @asteasolutions/zod-to-openapi@beta winston-daily-rotate-file --legacy-peer-deps"
   },
   "dependencies": {
@@ -56,6 +57,7 @@
     "mysql2": "^3.14.3",
     "next": "15.2.4",
     "next-themes": "^0.4.4",
+    "nodemailer": "^7.0.6",
     "react": "^19",
     "react-day-picker": "9.8.0",
     "react-dom": "^19",
@@ -81,6 +83,7 @@
     "@types/bcrypt": "^6.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22",
+    "@types/nodemailer": "^7.0.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "postcss": "^8.5",

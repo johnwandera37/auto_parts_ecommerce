@@ -13,5 +13,6 @@ declare global {
     lastName: string;
     role: UserRole;
     email: string;
+    emailVerified: boolean;
   }
 }

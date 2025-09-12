@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { serialize } from "cookie";
+import { errLog } from "@/utils/logger";
 
 export function parseCookies(cookieHeader: string | null) {
   if (!cookieHeader) return {};
@@ -20,10 +21,11 @@ export function getRefreshTokenFromRequest(req: Request): RefreshTokenResult {
   
   // No cookie header at all
   if (!cookieHeader) {
+     errLog("Missing authentication cookies cookies - no cookie header");
     return {
       success: false,
       response: NextResponse.json(
-        { error: "Missing authentication cookies" },
+        { error: "Your session has ended. Please log in again to continue." },
         { status: 401 }
       )
     };
@@ -34,10 +36,11 @@ export function getRefreshTokenFromRequest(req: Request): RefreshTokenResult {
   
   // Cookie header exists but no refresh token
   if (!refreshToken) {
+    errLog("Missing refresh token - cookie header present but no refresh_token");
     return {
       success: false,
       response: NextResponse.json(
-        { error: "Missing refresh token" },
+        { error: "Your session has expired. Please log in again." },
         { status: 401 }
       )
     };

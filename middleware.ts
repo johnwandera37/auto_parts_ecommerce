@@ -75,11 +75,22 @@ export async function middleware(req: NextRequest) {
 
   // 2. No tokens at all + protected route = not logged in
   if (!accessToken && !refreshToken && isProtectedRoutes) {
+    // Special access for from onboarding to verification
+    if (pathname === "/account/verification") {
+      const searchParams = req.nextUrl.searchParams;
+      const userId = searchParams.get("userId");
+      const email = searchParams.get("email");
+
+      if (userId && email) {
+        log("✅ Allowing verification page access with URL parameters");
+        return NextResponse.next(); // ✅ This allows access
+      }
+    }
     log("❌ No tokens, redirecting to login");
     return NextResponse.redirect(new URL("/account/login", req.url));
   }
 
-  // --- ATTEMPT TOKEN REFRESH IF ACCESS TOKEN EXPIRED BUT REFRESH EXISTS AND NOT ON PUBLIC PAGE ROUTES---
+  // --- ATTEMPT TOKEN REFRESH IF ACCESS TOKEN EXPIRED BUT REFRESH EXISTS AND NOT ON PUBLIC PAGE ROUTES ---
   if (!accessToken && refreshToken && !isPublicRoutes) {
     log("🚀 Starting refresh in middleware");
     // ✅ Check if axios already detected session expiry(Avoid race conditions with axios)
@@ -199,7 +210,69 @@ export async function middleware(req: NextRequest) {
     log("🚀 Verification results ADMIN/USER:", authResult);
   }
 
-  // --- SPECIAL ONBOARDING PAGE PROTECTION ---
+  // --- 1. FIRST: ONBOARDING CHECK FOR DEFAULT ADMIN ---
+  if (authResult && authResult.valid && authResult.user) {
+    const { user } = authResult;
+
+    // 🚨 DEFAULT ADMIN MUST COMPLETE ONBOARDING BEFORE ANYTHING ELSE
+    if (user.email === "admin@example.com" && !user.hasUpdatedCredentials) {
+      if (pathname !== "/admin/onboarding") {
+        log("🔐 Default admin needs onboarding - redirecting");
+        return NextResponse.redirect(new URL("/admin/onboarding", req.url));
+      }
+      return NextResponse.next(); // Allow access to onboarding
+    }
+  }
+
+  // --- 2. VERIFICATION PAGE ACCESS CONTROL ---
+  if (pathname === "/account/verification") {
+    const searchParams = req.nextUrl.searchParams;
+    const userId = searchParams.get("userId");
+    const email = searchParams.get("email");
+
+    // ✅ ALLOW ACCESS if userId and email are provided (post-registration & post-admin-update)
+    if (userId && email) {
+      return NextResponse.next();
+    }
+
+    // ✅ ALLOW ACCESS if user is authenticated but not verified (logged-in but unverified)
+    if (
+      authResult?.valid &&
+      authResult.user &&
+      !authResult.user.emailVerified
+    ) {
+      return NextResponse.next();
+    }
+
+    // ✅ REDIRECT if user is authenticated and already verified
+    if (authResult?.valid && authResult.user?.emailVerified) {
+      const dashboardPath =
+        authResult.user.role === "ADMIN" ? "/admin" : "/account/dashboard";
+      return NextResponse.redirect(new URL(dashboardPath, req.url));
+    }
+
+    // ❌ REDIRECT TO LOGIN for all other cases (no params, not authenticated)
+    return NextResponse.redirect(new URL("/account/login", req.url));
+  }
+
+  // --- 3. EMAIL VERIFICATION REDIRECTION (for logged-in users) ---
+  if (authResult && authResult.valid && authResult.user) {
+    // Redirect to verification if email is not verified AND not already on verification page
+    if (
+      !authResult.user.emailVerified &&
+      pathname !== "/account/verification"
+    ) {
+      log("🔐 Email not verified - redirecting to verification");
+      return NextResponse.redirect(
+        new URL(
+          `/account/verification?email=${authResult.user.email}&userId=${authResult.user.id}`,
+          req.url
+        )
+      );
+    }
+  }
+
+  // --- SPECIAL ONBOARDING PAGE PROTECTION as fallback, manually navigation ---
   if (pathname === "/admin/onboarding") {
     if (!authResult?.valid) {
       if (authResult?.error === "Token expired") {
@@ -300,19 +373,6 @@ export async function middleware(req: NextRequest) {
     // ✅ Users can access user account routes
     log("✅ User authorized to access account route");
     return NextResponse.next();
-  }
-
-  // --- VERIFICATION PAGE (special case for both admin and user) ---
-  if (
-    pathname === "/account/verification" ||
-    pathname === "/admin/verification"
-  ) {
-    if (!authResult?.valid) {
-      return NextResponse.redirect(new URL("/account/login", req.url));
-    }
-
-    // Allow both admins and users to access verification
-    // No role-based restrictions here
   }
 
   return NextResponse.next();

@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
         lastName: user.lastName,
         email: user.email,
         role: user.role,
+        emailVerified: user.emailVerified,
       },
     });
   } catch (err) {

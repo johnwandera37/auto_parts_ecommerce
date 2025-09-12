@@ -9,6 +9,7 @@ export async function getUserById(id: string) {
       lastName: true,
       email: true,
       role: true,
+      emailVerified: true
     },
   });
 

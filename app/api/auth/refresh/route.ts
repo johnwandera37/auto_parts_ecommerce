@@ -8,6 +8,7 @@ import { ACCESS_TOKEN_MAX_AGE } from "@/config/constants";
 import { getRefreshTokenFromRequest } from "@/lib/cookieUtils";
 import { handleRedisError } from "@/lib/redisErrorMapperHandler";
 import { email } from "zod/v4";
+import prisma from "@/lib/db";
 
 export async function POST(req: Request) {
   // Get cookies from header string
@@ -18,10 +19,20 @@ export async function POST(req: Request) {
     // Validate refresh token via JWT
     const payload = verifyRefreshToken(result.refreshToken) as {
       id: string;
-      role: string;
-      email: string;
+      role: string; // role could be stale but just keep will use fresh from the db
+      email: string; // can be stale, use latest from db
       sessionId: string;
     };
+
+    // Get FRESH user data from database
+    const user = await prisma.user.findUnique({
+      where: { id: payload.id },
+      include: { adminProfile: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
     try {
       // Attempt to get Redis client
@@ -34,8 +45,19 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Session expired" }, { status: 403 });
       }
 
-      // Create new access token
-      const newAccessToken = signToken({ id: payload.id, role: payload.role, email: payload.email });
+      // Create new access token, same structure as the one created during login
+      log("Email verified flag in refresh route", user.emailVerified);
+      const newAccessToken = signToken({
+        id: user.id,
+        role: user.role,
+        email: user.email, // ← Current email from DB
+        isDefaultAdmin: user.email === "admin@example.com",
+        emailVerified: user.emailVerified,
+        ...(user.role === "ADMIN" &&
+          user.adminProfile && {
+            hasUpdatedCredentials: user.adminProfile.hasUpdatedCredentials,
+          }),
+      });
 
       const accessCookie = serialize("access_token", newAccessToken, {
         httpOnly: true,
@@ -54,7 +76,7 @@ export async function POST(req: Request) {
       });
     } catch (redisError: any) {
       return handleRedisError(redisError, "refresh handler", {
-        status: 401,// specific default error on redis error mapper provided
+        status: 401, // specific default error on redis error mapper provided
         message: "Session validation failed",
       });
     }

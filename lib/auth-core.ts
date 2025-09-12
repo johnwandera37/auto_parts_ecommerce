@@ -5,6 +5,7 @@ import { getUserById } from "@/utils/getUserById";
 import { errLog, log } from "@/utils/logger";
 import { NextRequest } from "next/server";
 import { edgeCaseVerifyAccessToken } from "./jwt-edge";
+import { decode } from "punycode";
 
 export async function verifyRequestAuth(
   req: Request,
@@ -57,18 +58,20 @@ export async function verifyCookieAuth(
 
     const decoded = (await edgeCaseVerifyAccessToken(token)) as any
 
-    log("🔐 Decoded token:", !!decoded);
+    log("🔐 Decoded token:", decoded);
 
      // Check if we have the basic required fields
-    if (!decoded?.id || !decoded?.role || !decoded?.email) {
-      return { valid: false, error: "Invalid token structure" };
-    }
+    // if (!decoded?.id || !decoded?.role || !decoded?.email || !decoded.emailVerified) {
+    //   return { valid: false, error: "Invalid token structure" };
+    // }
 
     if (requiredRoles && requiredRoles.length > 0) {
       if (!requiredRoles.includes(decoded.role)) {
         return { valid: false, error: "Forbbiden" };
       }
     }
+
+    log("Email verified flag", decoded.emailVerified)
 
     // Return the user object with the fields we care about
     return { 
@@ -77,6 +80,7 @@ export async function verifyCookieAuth(
         id: decoded.id,
         role: decoded.role,
         email: decoded.email,
+        emailVerified: decoded.emailVerified,
         // Only include hasUpdatedCredentials if it exists (for admins)
         ...(decoded.hasUpdatedCredentials !== undefined && {
           hasUpdatedCredentials: decoded.hasUpdatedCredentials

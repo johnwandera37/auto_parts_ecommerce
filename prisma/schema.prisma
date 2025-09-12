@@ -32,6 +32,7 @@ enum CartStatus {
 model User {
   id               String   @id @default(cuid())
   email            String   @unique
+  emailVerified    Boolean  @default(false) // ✅ MUST be here on User model
   password         String
   firstName        String
   lastName         String
@@ -69,14 +70,13 @@ model UserSettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Verification {year
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  otp           String
-  attempts      Int      @default(0) // Track failed attempts
-  emailVerified Boolean  @default(false)
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
+model Verification {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  otp       String
+  attempts  Int      @default(0) // Track failed attempts
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
