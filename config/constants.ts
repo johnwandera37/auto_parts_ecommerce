@@ -36,6 +36,10 @@ export const endpoints = {
   verifyEmail: "/api/auth/verify-email",
   resendOtp: "/api/auth/resend-otp",
   cancelRegistration: "/api/auth/cancel-registration",
+
+// Forgot password
+    forgotPassword: "/api/auth/forgot-password",
+  resetPassword: "/api/auth/reset-password",
 };
 
 export const stringConstants = {
@@ -50,6 +54,8 @@ export const pages = {
   onbording: "/admin/onboarding",
   userDashboard: "/account/dashboard",
   adminDashboard: "/admin",
+   forgotPassword: "/account/forgot-password",
+  resetPassword: "/account/reset-password",
 };
 
 export {

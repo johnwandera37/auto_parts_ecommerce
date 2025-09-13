@@ -16,6 +16,7 @@ export const signupSchema = z
       .regex(/[A-Z]/, "Must contain at least one uppercase letter")
       .regex(/[a-z]/, "Must contain at least one lowercase letter")
       .regex(/[0-9]/, "Must contain at least one number")
+      .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character")
       .openapi({
         description: "Account password (min 8 characters)",
         example: "Doe@12345",
@@ -86,6 +87,7 @@ export const updateProfileSchema = z
       .regex(/[A-Z]/, "Must contain at least one uppercase letter")
       .regex(/[a-z]/, "Must contain at least one lowercase letter")
       .regex(/[0-9]/, "Must contain at least one number")
+      .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character")
       .openapi({
         description: "New password required for the admin",
         example: "newSecurePassword123",
@@ -112,6 +114,32 @@ export const resendOtpSchema = z.object({
   userId: z.cuid("Valid user ID is required"),
   email: z.email("Valid email is required"),
 });
+
+// forgot password
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+// Reset password
+export const resetPasswordSchema = z.object({
+  email: z.email("Please enter a valid email address"),
+  otp: z.string()
+    .length(6, "Verification code must be 6 digits")
+    .regex(/^\d+$/, "Verification code must contain only numbers"),
+  newPassword: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
+    confirmNewPassword: z.string().openapi({
+      description: "Confirm password (must match password)",
+      example: "Doe@12345",
+    }),
+}).refine((data) => data.newPassword === data.confirmNewPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match",
+  });
 
 //reusable department
 const departmentSchema = z.string().openapi({

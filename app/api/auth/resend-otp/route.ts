@@ -9,15 +9,15 @@ import { badRequestFromZod } from "@/utils/responseUtils";
 
 export async function POST(req: Request) {
   try {
- const body = await req.json();
+    const body = await req.json();
 
-        // ✅ Zod handles all validation including required fields
+    // ✅ Zod handles all validation including required fields
     const parse = resendOtpSchema.safeParse(body);
     if (!parse.success) {
       return badRequestFromZod(parse.error);
     }
 
-  const { userId, email } = parse.data;
+    const { userId, email } = parse.data;
 
     // Check if user exists and is not already verified
     const user = await prisma.user.findUnique({
@@ -38,22 +38,28 @@ export async function POST(req: Request) {
 
     // Generate new OTP and send email
     const verification = await createOrUpdateVerification(userId);
-    await sendVerificationEmail(email, verification.otp);
 
-    return NextResponse.json(
-      { message: `New verification code successfully sent to ${email}` },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    errLog("Resend OTP error:", getErrorMessage(error));
+    try {
+      await sendVerificationEmail(email, verification.otp, "verify");
 
-    if (error.message.includes("Failed to send")) {
       return NextResponse.json(
-        { error: "Failed to send verification email. Please try again later." },
-        { status: 500 }
+        { message: `New verification code successfully sent to ${email}` },
+        { status: 200 }
+      );
+    } catch (emailError: any) {
+      // Only network/timeout errors will reach here (shouldRethrow = true)
+      errLog("Error thrown from sendVerificationEmail:", emailError);
+
+      return NextResponse.json(
+        {
+          error: emailError.customErrMsg || "Network error occurred",
+          code: emailError.code, // can handle from front end but that is unnecessary extra work
+        },
+        { status: emailError.status || 503 }
       );
     }
-
+  } catch (error: any) {
+    errLog("Resend OTP error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

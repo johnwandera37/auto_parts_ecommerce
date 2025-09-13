@@ -99,27 +99,14 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   } catch (error: any) {
-    errLog("Email verification error:", getErrorMessage(error));
+    errLog("Email verification error:", error);
 
-    if (error.message.includes("expired")) {
-      return NextResponse.json(
-        { error: "Verification code has expired" },
-        { status: 400 }
-      );
-    }
-
-    if (error.message.includes("Invalid")) {
-      return NextResponse.json(
-        { error: "The OTP provided is invalid" },
-        { status: 400 }
-      );
-    }
-
-    if (error.message.includes("attempts")) {
-      return NextResponse.json(
-        { error: "Too many failed attempts. Please request a new code." },
-        { status: 400 }
-      );
+    if (
+      error.message.includes("expired") ||
+      error.message.includes("Invalid") ||
+      error.message.includes("attempts")
+    ) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     return NextResponse.json(
@@ -128,40 +115,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-// Get the access token from cookies to check original email if true
-// const authHeader = req.headers.get("Authorization");
-// let isDefaultAdmin: boolean | undefined;
-// if (authHeader && authHeader.startsWith("Bearer ")) {
-//   const token = authHeader.split(" ")[1];
-//   try {
-//     const decoded = verifyAccessToken(token) as {
-//       isDefaultAdmin?: boolean;
-//     };
-//     isDefaultAdmin = decoded.isDefaultAdmin;
-//   } catch (error) {
-//     warnLog("Could not decode access token:", error);
-//   }
-// }
-
-// // Clear session if it was originally the default admin
-// if (isDefaultAdmin) {
-//   // Clear session for default admin
-//   response.cookies.delete("access_token");
-//   response.cookies.delete("refresh_token");
-
-//   // Also clear Redis session
-//   try {
-//     const redis = await getRedisClient();
-//     // Get session ID from refresh token if available
-//     const refreshToken = req.cookies.get("refresh_token")?.value;
-//     if (refreshToken) {
-//       const payload = verifyRefreshToken(refreshToken) as {
-//         sessionId: string;
-//       };
-//       await redis.del(`auto_parts_ecommerce:session:${payload.sessionId}`);
-//     }
-//   } catch (error) {
-//     warnLog("Redis cleanup optional:", error);
-//   }
-// }

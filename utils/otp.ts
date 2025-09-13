@@ -1,5 +1,6 @@
 // utils/otp.ts
 import prisma from "@/lib/db";
+import { errLog, log } from "./logger";
 
 export function generateOTP(): string {
   // 6-digit OTP
@@ -56,11 +57,12 @@ export async function verifyOTP(userId: string, userOtp: string): Promise<boolea
   }
 
   if (verification.expiresAt < new Date()) {
-    throw new Error('OTP has expired');
+    log("OTP has expired");
+    throw new Error('Verification code has expired');
   }
 
   if (verification.attempts >= 3) {
-    throw new Error('Too many failed attempts. Please request a new OTP.');
+    throw new Error('Too many failed attempts. Please request a new code.');
   }
 
   if (verification.otp !== userOtp) {
@@ -69,8 +71,8 @@ export async function verifyOTP(userId: string, userOtp: string): Promise<boolea
       where: { userId },
       data: { attempts: { increment: 1 } }
     });
-    
-    throw new Error('Invalid OTP');
+    log("Invalid OTP")
+    throw new Error('The OTP provided is invalid');
   }
 
  // OTP is valid - mark user as verified and CLEAN UP verification data
